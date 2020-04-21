@@ -1,5 +1,6 @@
 import numpy as np
 import xarray as xr
+from .pandas_utils import pd
 from .utils import magnitude_thousand
 
 xr.set_options(keep_attrs=True)
