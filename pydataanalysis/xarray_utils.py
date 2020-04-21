@@ -126,8 +126,7 @@ def sign_flip_dim(ds, var, dim, flip=False):
     
     return ds
 
-def sign_flip_direction(da, reverse=False):
-    s = xr.DataArray([1, -1], [('direction', ['negative', 'positive'])])
+def sign_flip_coord(da, s, reverse=False):
     
     # Reverse sign
     if reverse:
@@ -139,11 +138,11 @@ def sign_flip_direction(da, reverse=False):
     # Annotate negative sign
     lst = []
     for i, v in enumerate(s):
-        direction = da['direction'][i].item()
+        k = da[s.name][i].item()
         if v.item() == -1:
-            direction = rf"{direction} $\times {{-1}}$"
-        lst.append(direction)
-    da['direction'] = lst
+            k = rf"{k} $\times {{-1}}$"
+        lst.append(k)
+    da[s.name] = lst
 
     return da
 
