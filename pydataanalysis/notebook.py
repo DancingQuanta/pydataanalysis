@@ -1,7 +1,6 @@
 import os
 import shutil
 from subprocess import check_output, CalledProcessError, STDOUT
-# import papermill as pm
 from src.utils import mkdir
 
 
@@ -182,19 +181,24 @@ def copy_file(source, target):
     except:
         print("Unexpected error:", sys.exc_info())
         
-def run_notebook(nb_dest, nb_template, parameters, debug=False):
+def run_notebook(nb_output, nb_input, parameters, execute=False, debug=False):
     
-#     # Run notebook from a template
-#     pm.execute_notebook(
-#         nb_template,
-#         nb_dest,
-#         parameters=parameters
-#     )
+    print(parameters)
+    if execute:
+        import papermill as pm
+        # Run notebook from a template
+        pm.execute_notebook(
+            nb_input,
+            nb_output,
+            parameters=parameters,
+            nest_asyncio=True
+        )
+    else:
+        # Copy file instead of papermill
+        copy_file(nb_input, nb_output)
     
-    # Copy file instead of papermill
-    copy_file(nb_template, nb_dest)
-    
-    src = os.path.normpath(nb_dest)
+    # Convert notebook to other format
+    src = os.path.normpath(nb_output)
     d = os.path.dirname(src)
     f = os.path.basename(src)
     fn = os.path.splitext(f)[0]
@@ -204,7 +208,7 @@ def run_notebook(nb_dest, nb_template, parameters, debug=False):
     export_tex(src, dest, debug)
 #     export_doc(src, dest, debug)
     
-#     export_tex(nb_dest, debug)
-#     export_html(nb_dest, debug)
+#     export_tex(nb_output, debug)
+#     export_html(nb_output, debug)
 
     
