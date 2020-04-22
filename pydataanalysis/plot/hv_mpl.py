@@ -1,8 +1,8 @@
 import os
 import re
 import numpy as np
-from .xarray_utils import xr, reverse_sign_flip, pprint_label
-from .statistics import unc_dim_to_vars
+from ..xarray_utils import xr, reverse_sign_flip, pprint_label
+from ..statistics import unc_dim_to_vars
 from .mpl import *
 from matplotlib.backends.backend_pdf import PdfPages
 
