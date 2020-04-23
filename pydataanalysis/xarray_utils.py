@@ -23,18 +23,18 @@ def apply_ufunc_to_dataset(func, *args, names, **kwargs):
 def xmagnitude_thousand(da):
     # Get max
     number = da.max()
-    
+
     # Calculate thousand muliplter
     exponent = magnitude_thousand(number)
-        
+
     # Adjust scale
     if exponent != 0:
         units = da.attrs.get('units', '')
 
         da = da / 10**exponent
 
-        da.attrs['units'] = units + f'x$10^{{{exponent}}}$'
-        
+        da.attrs['units'] = rf'{units} $\times 10^{{{exponent}}}$'
+
     return da
 
 def pprint_label(da):
