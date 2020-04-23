@@ -224,6 +224,168 @@ def stack_str(ds, dims):
     
     return ds
 
+def arange(start, stop, axis=0):
+    arr = np.arange(start, stop)
+    return arr
+
+def xarange(start, stop, dim):
+    da = xr.apply_ufunc(
+        arange, start, stop,
+        # input_core_dims=[[], []],
+        output_core_dims=[['seq', dim]],
+        # vectorize=True
+    )
+    return da
+
+def separate_regions(a, m):
+    m0 = np.concatenate(( [False], m, [False] ))
+    idx = np.flatnonzero(m0[1:] != m0[:-1])
+    return [a[idx[i]:idx[i+1]] for i in range(0,len(idx),2)]
+
+def mask_start_stop(a, trigger_val=True):
+    """
+    Find edges in a mask
+    """
+    # "Enclose" mask with sentients to catch shifts later on
+    mask = np.r_[False,np.equal(a, trigger_val),False]
+
+    # Get the shifting indices
+    idx = np.flatnonzero(mask[1:] != mask[:-1])
+
+    # Get the start and end indices with slicing along the shifting ones
+    return zip(idx[::2], idx[1::2]-1)
+
+def mask_block_edge(mask, max_len):
+    # Indices of edges of regions that re monotonically decreasing
+    inner_edge_idx = list(mask_start_stop(mask))
+    
+    # Build indices of start and stop of adjacent regions
+    edge_idx = []
+    
+    block_idx = 0
+    # Is first block start of array?
+    edge = inner_edge_idx[0]
+    start, stop = edge
+    if start != 0:
+        stop = start - 1
+        start = 0
+        edge_idx.append((start, stop))
+        block_idx = 1
+    edge_idx.append(edge)
+    for edge in inner_edge_idx[1:]:
+        # What are previous block edge indices?
+        prev = edge_idx[block_idx]
+        
+        # Calulate start and stop of a block between 
+        # last block and this block
+        _, start = prev
+        stop, _ = edge
+        new_block = start+1, stop-1
+        
+        # Append last block to edge_idx
+        edge_idx.append(new_block)
+        
+        # Append current block to edge_idx
+        edge_idx.append(edge)
+        
+        # Increment by 2
+        block_idx = block_idx + 2
+    
+    # Last block
+    edge = inner_edge_idx[0]
+    start, stop = edge
+    if stop != max_len:
+        start = stop + 1
+        stop = max_len - 1
+        edge_idx.append((start, stop))
+
+    return edge_idx
+
+def monotonic_array(arr):
+    ## Find monotonically decreasing regions
+    
+    # Mark regions of higher value than right neighbours
+    # Neighbours that change from True to False are
+    # changing direction from negative to positive
+    # otherwise False to True changing direction from
+    # positive to negative
+    mask = arr[:-1] > arr[1:]
+    segment_idx = mask_block_edge(mask, len(arr))
+    return segment_idx
+
+def isolate_dim(ds, dim):
+    
+    # Split dataset so we can work on variables with dim separately
+    dim_da_list = []
+    non_dim_da_list = []
+    for da_name, da in ds.data_vars.items():
+        # If variable have a dimension 'dim' add to a list 
+        # otherwise add to other list
+        if dim in da.dims:
+            dim_da_list.append(da_name)
+        else:
+            non_dim_da_list.append(da_name)
+            
+    # Extract datasets
+    dim_ds = ds[dim_da_list]
+    
+    if non_dim_da_list:
+        non_dim_ds = ds[non_dim_da_list]
+        return dim_ds, non_dim_ds
+    else:
+        return dim_ds, None
+
+def split_coords(ds, coords, dim, region_points, new_dim):
+    """
+    Split a coordinate across a new dimension
+    """
+
+    # edge_dim = 'idx'
+    # region_points = {k : (edge_dim, v) for k, v in region_points.items()}
+    # da = xr.Dataset(region_points).to_array(dim=new_dim, name=dim)
+    # da = xarange(da.isel(idx=0), da.isel(idx=1), new_dim)
+    # lst = [np.arange(da.isel({'idx': 0, new_dim: k}),
+    #                  da.isel({'idx': 1, new_dim: k}))
+    #        for k in range(len(da[new_dim]))]
+    # da = xr.concat(lst, new_dim)
+    # da = xr.apply_ufunc(
+    #     np.arange, da.isel(idx=0), da.isel(idx=1),
+    #     input_core_dims=[[new_dim], [new_dim]],
+    #     output_core_dims=[[edge_dim, new_dim]],
+    #     vectorize=True
+    # )
+
+    # print(da)
+    # da = ds.sel(field_index=slice(da.isel(idx=0), da.isel(idx=1)))
+    # print(da)
+    # raise(da)
+
+    # split dataset
+    dim_ds, non_dim_ds = isolate_dim(ds, dim)
+
+    # Loop over each new_dim to construct new dimension
+    new_dim_list = []
+    for k, v in region_points.items():
+        # Select part of the cycle
+        slice_new_dim = dim_ds.sel({dim: slice(*v)})
+
+        # Change dimension coords from dim to coords
+        # and assign new_dim coordinate
+        slice_new_dim = (slice_new_dim
+                         .assign_coords({new_dim: k})
+                         .swap_dims({dim: coords}))
+
+        # Record cycle slice with different coords
+        new_dim_list.append(slice_new_dim)
+
+    # Construct dataset along a new dimension based on new_dim
+    data = xr.concat(new_dim_list, new_dim)
+
+    # Merge dataset
+    if non_dim_ds is not None:
+        data = xr.merge([data, non_dim_ds])
+    return data
+
 def stack(ds, dims):
     
     attrs = get_attrs(ds)
