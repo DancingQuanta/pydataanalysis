@@ -187,19 +187,6 @@ def stats2unc_dim(ds):
     
     return da
 
-# def rep_stats(ds):
-    
-#     # Get replicate dim
-#     dims = list(ds.dims)
-#     for dim in dims:
-#         if 'rep' in dim:
-#             rep_dim = dim
-            
-#     mean = ds.mean(dim=rep_dim)
-#     std = ds.std(dim=rep_dim)
-#     ds = xr.concat([mean, std], pd.Index(['mean', 'std'], name='stats'))
-#     return ds
-
 def filter_uncertainty(ds, variable, level):
     ds[variable + '_relative'] = (ds[variable + '_unc']
                                   / ds[variable])*100
@@ -333,29 +320,6 @@ def combine_uncertainty(ds):
     
     return ds
     
-def xtable(ds):
-    # Uncertainty type to dimension
-    ds = ds.pipe(split_uncertainty)
-    
-    # Get attrs
-    attrs = get_attrs(ds)
-
-    # Calculate relative uncertainty
-    relative = np.abs(ds.sel(unc='Uncertainty') / ds.sel(unc='Measurand'))
-
-    # add relative uncertainty to dataset
-    ds = xr.concat([ds, relative.assign_coords(unc='Relative uncertainty')], 'unc')
-
-    # Restore attrs to dataset
-    restore_attrs(ds, attrs)
-
-    # Convert dataset into a table
-    table = ds.to_dataframe()
-    table.index.name = ''
-    table.columns = ["{long_name} ({units})".format(**ds[var].attrs) for var in table.columns]
-    table = table.T
-    return table
-
 def confidence_intervals(ds, k=1):
     lower = ds.sel(unc='Measurand') - k * ds.sel(unc='Uncertainty')
     lower = lower.assign_coords(unc=f"{k} lower")
