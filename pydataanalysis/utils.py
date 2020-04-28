@@ -75,3 +75,43 @@ def vrange(starts, stops):
     l = stops - starts # Lengths of each range.
 #     print(l.sum())
     return np.repeat(stops - l.cumsum(), l) + np.arange(l.sum())
+
+def percent_change(data, old, new):
+    """
+    Calculate a percentage change from old to new
+    Args:
+        data: dictionary
+        old: string of a dictionary key 
+        new: string of a dictionary key
+    """
+    # Accept a dictionary
+    percent = ((data[new] - data[old])
+               /data[old]) * 100
+    return percent
+
+def percent_diff(data, one, two):
+    """
+    Calculate a difference
+    Args:
+        data: dictionary
+        one: string of a dictionary key 
+        two: string of a dictionary key
+    """
+    avg = (data[one] + data[two])/2
+    diff = np.abs(data[one] - data[two])
+    percent = (diff / avg) * 100
+    
+    return percent
+
+def percent_error(data, exact, approx):
+    """
+    Calculate a percentage error of approx with exact
+    Args:
+        data: dictionary
+        exact: string of a dictionary key 
+        approx: string of a dictionary key
+    """
+    error = np.abs(data[exact] - data[approx])
+    percent = (error / data[exact]) * 100
+    
+    return percent
