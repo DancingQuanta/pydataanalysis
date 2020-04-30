@@ -184,7 +184,7 @@ def scalar_to_xarray(data):
         value.attrs = {'long_name': da['long_name'].item(),
                        'units': da['units'].item()}
         return value
-    data = data.apply(fn)
+    data = data.map(fn)
     return data
 
 def select_uniques(ds, dim):
@@ -313,8 +313,8 @@ def monotonic_array(arr):
     segment_idx = mask_block_edge(mask, len(arr))
     return segment_idx
 
-def isolate_dim(ds, dim):
-    
+def filter_var_by_dim(ds, dim):
+
     # Split dataset so we can work on variables with dim separately
     dim_da_list = []
     non_dim_da_list = []
@@ -325,10 +325,10 @@ def isolate_dim(ds, dim):
             dim_da_list.append(da_name)
         else:
             non_dim_da_list.append(da_name)
-            
+
     # Extract datasets
     dim_ds = ds[dim_da_list]
-    
+
     if non_dim_da_list:
         non_dim_ds = ds[non_dim_da_list]
         return dim_ds, non_dim_ds
@@ -361,7 +361,7 @@ def split_coords(ds, coords, dim, region_points, new_dim):
     # raise(da)
 
     # split dataset
-    dim_ds, non_dim_ds = isolate_dim(ds, dim)
+    dim_ds, non_dim_ds = filter_var_by_dim(ds, dim)
 
     # Loop over each new_dim to construct new dimension
     new_dim_list = []
