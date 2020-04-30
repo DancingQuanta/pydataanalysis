@@ -328,24 +328,29 @@ def confidence_intervals(ds, k=1):
     upper = upper.assign_coords(unc=f"{k} upper")
     ds = xr.concat([ds, lower, upper], 'unc')
     return ds
-    
-def xtable_uncertainty(ds, index_name=''):
-    
-    # Drop coords
-    ds = ds.reset_coords(drop=True)
-    
-    # Get attrs
-    attrs = get_attrs(ds)
 
+def relative_uncertainties(ds):
     # Calculate relative uncertainty
     relative = np.abs(ds.sel(unc='Uncertainty') / ds.sel(unc='Measurand'))
 
     # add relative uncertainty to dataset
     ds = xr.concat([ds, relative.assign_coords(unc='Relative uncertainty')], 'unc')
+    return ds
+
+def xtable_uncertainty(ds, index_name=''):
+
+    # Drop coords
+    ds = ds.reset_coords(drop=True)
+
+    # Get attrs
+    attrs = get_attrs(ds)
+
+    # Calcalate relative uncertainties
+    ds = relative_uncertainties(ds)
 
     # Restore attrs to dataset
     restore_attrs(ds, attrs)
-    
+
     # Convert to dataframe
     table = ds.to_dataframe()
 
