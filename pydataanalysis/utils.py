@@ -115,3 +115,7 @@ def percent_error(data, exact, approx):
     percent = (error / data[exact]) * 100
     
     return percent
+
+def sqrt_ss(arr):
+    """Square root of sum of squares"""
+    return np.sqrt(np.sum(np.square(arr)))
