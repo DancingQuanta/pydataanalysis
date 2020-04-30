@@ -7,6 +7,7 @@ from uncertainties import ufloat, unumpy as unp
 # import metrolopy as uc
 # from .data import *
 from .xarray_utils import *
+from .utils import sqrt_ss
 
 def zscore(data, dim):
     """
@@ -328,7 +329,7 @@ def confidence_intervals(ds, k=1):
     ds = xr.concat([ds, lower, upper], 'unc')
     return ds
     
-def xtable_uncertainty(ds):
+def xtable_uncertainty(ds, index_name=''):
     
     # Drop coords
     ds = ds.reset_coords(drop=True)
@@ -347,14 +348,23 @@ def xtable_uncertainty(ds):
     
     # Convert to dataframe
     table = ds.to_dataframe()
-    
+
+    # Use long_name and units for variables
     table.columns = [pprint_label(ds[var]) for var in table.columns]
+
+    # Clear index name and transpose
     table.index.name = ''
     table = table.T
-    table.index.name = ''
+
+    table.index.name = index_name
     return table
 
 def pdtable_uncertainty(df):
     ds = scalar_to_xarray(df)
     ds = split_uncertainty(ds)
     return xtable_uncertainty(ds)
+
+def mul_prog(X, nominal, unc):
+    """Error propagation for multiplication or division"""
+    rel = unc / nominal
+    return X * sqrt_ss(rel)
