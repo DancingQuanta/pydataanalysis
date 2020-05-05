@@ -5,6 +5,14 @@ from .utils import magnitude_thousand
 
 xr.set_options(keep_attrs=True)
 
+def reset_coords_except(ds, keep, **kwargs):
+    """
+    Reset all coordinates except these specified in keep
+    """
+    coords = [coord for coord in ds.coords
+              if coord not in keep + list(ds.dims)]
+    return ds.reset_coords(coords, **kwargs)
+
 def get_attrs(ds):
     attrs = {}
     for var in ds.variables:
@@ -15,6 +23,25 @@ def restore_attrs(ds, attrs):
     for var in ds.variables:
         if var in attrs:
             ds[var].attrs = attrs[var]
+
+def combine(d, dim, new_coords='coords'):
+    coords = d.keys()
+    das = d.values()
+    for k, v in d.items():
+        d[k] = v.assign_coords({new_coords: k})
+    
+    concat = xr.concat(d.values(), dim)
+    return concat
+
+def split(ds, dim, old_coords):
+    # Get unique values of old coords
+    uniques = np.unique(ds[old_coords])
+    sub_dict = {}
+    for unique in uniques:
+        sub = ds.where(ds[old_coords] == unique, drop=True)
+        sub = sub.drop(old_coords)
+        sub_dict[unique] = sub
+    return sub_dict
 
 def apply_ufunc_to_dataset(func, *args, names, **kwargs):
     results = xarray.apply_ufunc(func, *args, **kwargs)
