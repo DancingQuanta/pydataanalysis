@@ -6,6 +6,9 @@ def mkdir(*args):
     os.makedirs(dir, exist_ok=True)
     return dir
 
+def is_odd(num):
+    return num & 0x1
+
 def odict_sort_by_list(d, sort_list):
     return type(d)((k, d[k]) for k in sort_list)
 
