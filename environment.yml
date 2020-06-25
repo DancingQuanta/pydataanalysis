@@ -1,0 +1,32 @@
+name: pydataanalysis
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - black
+  - flake8
+  - jupyter
+  - jupytext
+  - toml
+  - matplotlib
+  - numpy
+  - scipy
+  - pandas
+  - xarray
+  - netcdf4
+  - matplotlib
+  - bokeh
+  - selenium
+  - python-chromedriver-binary
+  - holoviews
+  - hvplot
+  - panel
+  - pip
+  - pytest
+  - pandoc=2.9.1.1
+  - pandoc-crossref
+  - panflute
+  - tabulate
+  - pip:
+    - -e .
+    - pandoc-img-glob
