@@ -4,8 +4,6 @@ import xarray as xr
 import scipy
 import uncertainties
 from uncertainties import ufloat, unumpy as unp
-# import metrolopy as uc
-# from .data import *
 from .xarray_utils import *
 from .utils import sqrt_ss
 
