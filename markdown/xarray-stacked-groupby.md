@@ -105,7 +105,7 @@ import xarray as xr
 # Dimensions
 N = xr.DataArray(np.arange(100), dims='N', name='N')
 z = xr.DataArray([1, -1], dims='z', name='z')
-reps = xr.DataArray(np.arange(5), dims='reps', name='reps')
+reps = xr.DataArray(np.arange(3), dims='reps', name='reps')
 
 # Variables
 x = xr.DataArray(np.random.randn(len(N), len(z), len(reps)),
@@ -121,10 +121,10 @@ data = xr.merge([x, y])
 data = data.assign_coords(z=z, reps=reps)
 
 # Function that stack all but one diensions and groupby over the stacked dimension.
-def process_stacked_groupby(ds, dim, func, *args):
+def process_stacked_groupby(ds, dim):
 
     # Function to apply to stacked groupby
-    def apply_fn(ds, dim, func, *args):
+    def apply_fn(ds, dim):
 
         # Get groupby dim
         groupby_dim = list(ds.dims)
@@ -134,16 +134,13 @@ def process_stacked_groupby(ds, dim, func, *args):
         # Unstack groupby dim
         ds2 = ds.unstack(groupby_dim).squeeze()
 
-        # perform function
-        ds3 = func(ds2, *args)
-
         # Add mulit-index groupby_var to result
-        ds3 = (ds3
+        ds2 = (ds2
                .reset_coords(drop=True)
                .assign_coords(groupby_var)
                .expand_dims(groupby_dim)
              )
-        return ds3
+        return ds2
 
     # Get list of dimensions
     groupby_dims = list(ds.dims)
@@ -156,7 +153,7 @@ def process_stacked_groupby(ds, dim, func, *args):
     ds2 = ds.stack({stack_dim: groupby_dims})
 
     # Groupby and apply
-    ds2 = ds2.groupby(stack_dim, squeeze=False).map(apply_fn, args=(dim, func, *args))
+    ds2 = ds2.groupby(stack_dim, squeeze=False).map(apply_fn, args=(dim))
 
     # Unstack
     ds2 = ds2.unstack(stack_dim)
@@ -167,12 +164,8 @@ def process_stacked_groupby(ds, dim, func, *args):
 
     return ds2
 
-# Function to apply on groupby
-def fn(ds):
-    return ds
-
 # Run groupby with applied function
-data.pipe(process_stacked_groupby, 'N', fn)
+data.pipe(process_stacked_groupby, 'N')
 ```
 
 ```python
