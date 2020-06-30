@@ -104,15 +104,12 @@ import xarray as xr
 
 # Dimensions
 N = xr.DataArray(np.arange(100), dims='N', name='N')
+z = xr.DataArray([1, -1], dims='z', name='z')
 reps = xr.DataArray(np.arange(5), dims='reps', name='reps')
-horizon = xr.DataArray([1, -1], dims='horizon', name='horizon')
-horizon.attrs = {'long_name': 'Horizonal', 'units': 'H'}
-vertical = xr.DataArray(np.arange(1, 4), dims='vertical', name='vertical')
-vertical.attrs = {'long_name': 'Vertical', 'units': 'V'}
 
 # Variables
-x = xr.DataArray(np.random.randn(len(N), len(reps), len(horizon), len(vertical)),
-                 dims=['N', 'reps', 'horizon', 'vertical'],
+x = xr.DataArray(np.random.randn(len(N), len(z), len(reps)),
+                 dims=['N', 'z', 'reps'],
                  name='x')
 y = x * 0.1
 y.name = 'y'
@@ -121,7 +118,7 @@ y.name = 'y'
 data = xr.merge([x, y])
 
 # Assign coords
-data = data.assign_coords(reps=reps, vertical=vertical, horizon=horizon)
+data = data.assign_coords(z=z, reps=reps)
 
 # Function that stack all but one diensions and groupby over the stacked dimension.
 def process_stacked_groupby(ds, dim, func, *args):
