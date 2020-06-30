@@ -128,19 +128,19 @@ def process_stacked_groupby(ds, dim):
 
         # Get multi-index var
         groupby_var = ds[[groupby_dim]]
+        mi = ds.indexes[groupby_dim]
 
         # Unstack and remove from dataset
-        ds2 = ds.unstack(groupby_dim).squeeze()
+        ds = ds.unstack(groupby_dim).squeeze()
 
         # Add mulit-index groupby_var to original dataset
-        ds2 = (ds2
-               .reset_coords(drop=True)
-               .assign_coords(groupby_var)
-               .expand_dims(groupby_dim)
-             )
-        return ds2
+        ds = ds.reset_coords(drop=True)
+        ds = ds.expand_dims(groupby_dim)
+        ds = ds.assign_coords({groupby_dim:mi})
+        return ds
 
     # Get list of dimensions
+    
     groupby_dims = list(ds.dims)
 
     # Remove dimension not grouped
