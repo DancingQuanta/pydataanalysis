@@ -124,17 +124,15 @@ data = data.assign_coords(z=z, reps=reps)
 def process_stacked_groupby(ds, dim):
 
     # Function to apply to stacked groupby
-    def apply_fn(ds, dim):
+    def apply_fn(ds, groupby_dim):
 
-        # Get groupby dim
-        groupby_dim = list(ds.dims)
-        groupby_dim.remove(dim)
-        groupby_var = ds[groupby_dim]
+        # Get multi-index var
+        groupby_var = ds[[groupby_dim]]
 
-        # Unstack groupby dim
+        # Unstack and remove from dataset
         ds2 = ds.unstack(groupby_dim).squeeze()
 
-        # Add mulit-index groupby_var to result
+        # Add mulit-index groupby_var to original dataset
         ds2 = (ds2
                .reset_coords(drop=True)
                .assign_coords(groupby_var)
@@ -153,14 +151,10 @@ def process_stacked_groupby(ds, dim):
     ds2 = ds.stack({stack_dim: groupby_dims})
 
     # Groupby and apply
-    ds2 = ds2.groupby(stack_dim, squeeze=False).map(apply_fn, args=(dim))
+    ds2 = ds2.groupby(stack_dim, squeeze=False).map(apply_fn, args=[stack_dim])
 
     # Unstack
     ds2 = ds2.unstack(stack_dim)
-
-    # Restore attrs
-    for dim in groupby_dims:
-        ds2[dim].attrs = ds[dim].attrs
 
     return ds2
 
