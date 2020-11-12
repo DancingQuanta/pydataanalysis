@@ -1,5 +1,5 @@
 # Report name
-REPORT = MagNaStand_MNP_technical
+REPORT = Python_Data_Analysis
 
 # The bibliography file
 BIB = references.bib
@@ -47,7 +47,7 @@ REPORT_WORD = $(WORD_TARGET)$(REPORT).docx
 # Python
 PYTHON = python
 
-# The nbconvert alternative 
+# The nbconvert alternative
 NBCONVERT ?= jupyter nbconvert
 
 # Notebook merger
@@ -71,7 +71,7 @@ MKDIR = mkdir -p
 EXECUTE_NOTEBOOK = $(NBCONVERT) --to notebook --execute --output-dir=$(FULL_NBS) --ExecutePreprocessor.timeout=1000
 
 # Use standard Jupyter tools
-CONVERT_TO_MARKDOWN = $(NBCONVERT) --to mddocx --output-dir=$(MARKDOWN_TARGET) --TagRemovePreprocessor.enabled=True --TagRemovePreprocessor.remove_cell_tags='{"remove_input"}' 
+CONVERT_TO_MARKDOWN = $(NBCONVERT) --to mddocx --output-dir=$(MARKDOWN_TARGET) #--log-level='DEBUG'
 
 # For Word .docx files, we start from the markdown version
 CONVERT_TO_WORD = $(PANDOC) -F pandoc-crossref -F pandoc-img-glob -F src/pandoc_svg.py
@@ -131,9 +131,9 @@ help:
 	@echo "* Web site files -> '$(DOCS_TARGET)'"
 	@echo ""
 	@echo "Publish:"
-	@echo "* make docs -> Create public version of current documents" 
-	@echo "* make beta -> Create beta version of current documents" 
-	@echo "* make publish-all -> Add docs to git, preparing for publication" 
+	@echo "* make docs -> Create public version of current documents"
+	@echo "* make beta -> Create beta version of current documents"
+	@echo "* make publish-all -> Add docs to git, preparing for publication"
 	@echo ""
 	@echo "Settings:"
 	@echo "* Use make PUBLISH=(nbconvert|nbpublish|bookbook) to choose a converter"
@@ -171,7 +171,7 @@ $(REPORT_NOTEBOOK): $(FULLS)
 	@echo Created $@
 
 ## Cleanup
-.PHONY: clean-target clean-report 
+.PHONY: clean-target clean-report
 clean-target:
 	$(RM) $(MARKDOWNS) $(WORDS)
 
