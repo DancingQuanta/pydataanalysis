@@ -74,15 +74,6 @@ matplotlib.rcParams.update(params)
 
 # latexify()
 
-# def sublabel(label, ax, fmt=None, size=18, pos=(-0.35, 0.85)):
-#     from matplotlib.offsetbox import AnchoredText
-#     at = AnchoredText(self.sublabel_format.format(**labels), loc=3,
-#                   bbox_to_anchor=pos, frameon=False,
-#                   prop=dict(size=self.sublabel_size, weight='bold'),
-#                   bbox_transform=axis.transAxes)
-#     at.patch.set_visible(False)
-#     axis.add_artist(at)
-
 def setup_legend(leg):
     frame = leg.get_frame()
     frame.set_facecolor('1.0')
@@ -94,85 +85,6 @@ def hide_spines(ax):
     # Hide the right and top spines
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
-    
-# def grid_direction_reps_current_plot(ds, x, y):
-#     fig, axes = plt.subplots(1, 2, figsize=(8, 3), sharey=False, sharex=True)
-
-#     xlabel = pprint_label(ds[x])
-#     ylabel = pprint_label(ds[y])
-
-#     for i, ax in enumerate(axes):
-#         sub = ds.isel(I=i)
-#         current = sub['I']
-#         sub = sub.reset_coords(drop=True)
-#         pos = sub.sel(direction='positive')#.to_dataframe()
-#         neg = sub.sel(direction='negative')#.to_dataframe()
-#         ax.plot(pos[x], pos[y], label='Ascending Field')
-#         ax.plot(neg[x], neg[y], label='Descending Field')
-
-#         if i == 0:
-#             ax.set_ylabel(ylabel)
-#             ax.legend(loc='lower center')
-
-#         ax.set_xlabel(xlabel)
-#         ax.set_title(pprint_title(current))
-
-#     fig.tight_layout()
-
-def mpl_overlay_grid(ds, x, y, overlay, row, col, figsize=None, **kwargs):
-    
-    ds = ds.pipe(reverse_sign_flip, y)
-    
-    # Number of rows and cols
-    nrows = len(ds[row])
-    ncols = len(ds[col])
-    
-    fig, axes = plt.subplots(nrows, ncols, sharey='row', sharex='col', figsize=figsize)
-    
-    xlabel = pprint_label(ds[x])
-    ylabel = pprint_label(ds[y])
-    
-    for i, r in enumerate(ds[row]):
-        for j, c in enumerate(ds[col]):
-            ax = axes[i, j]
-            sub = ds.isel({row:i, col:j})
-#             sub.plot.scatter(x=x, y=y, hue=overlay, hue_style='discrete', ax=ax, **kwargs)
-
-            df = sub.reset_coords().to_dataframe()
-            for k, grp in df.groupby(overlay):
-                ax.plot(grp[x], grp[y], label=str(k))
-    
-#             ax.set_xlabel(None)
-#             ax.set_ylabel(None)
-            
-            if i == 0 and j == 0:
-                setup_legend(ax.legend())
-#             else:
-#                 ax.get_legend().remove()
-            
-            # Top
-            if i == 0:
-                col_value = pprint_label_value(sub[col])
-                ax.set_xlabel(col_value)
-                ax.xaxis.set_label_position('top')
-            
-            # Bottom
-            if i == len(ds[row])-1:
-                ax.set_xlabel(xlabel)
-                
-            # Left
-            if j == 0:
-                ax.set_ylabel(ylabel)
-
-            # Right
-            if j == len(ds[col])-1:
-                row_value = pprint_label_value(sub[row])
-                ax.set_ylabel(row_value, rotation=270, labelpad=15)
-                ax.yaxis.set_label_position('right')
-            
-            hide_spines(ax)
-    
-    fig.tight_layout()
 
 def mpl_error_spread(x, y, y_err, ax, **kwargs):
     
@@ -212,108 +124,20 @@ def mpl_error_plot_df(df, ax):
     
     # Area plot
     mpl_error_spread(df.index, df['mean'], df['std'], ax, color='indianred', alpha=0.5, label='std')
-    
-#     ds.line(x, 'median', ax=ax, color='indianred', label='median')
-#     mpl_error_spread(ds, x, 'median', 'mad', color='indianred', alpha=0.5, label='mad')
-    
 
-def mpl_error_grid(ds, dim, row, col, figsize=None, share_all=False, **kwargs):
-    # Variables
-    raw =  'data'
-    central = 'mean'
-    dispersion = 'std'
-    
-    # Broadcast variables
-    ds = ds[[raw, central, dispersion]].broadcast_like(ds[raw])
-    
-    # Number of rows and cols
-    nrows = len(ds[row])
-    ncols = len(ds[col])
-    
-    sharey = True if share_all else 'row'
-    sharex = True if share_all else 'col'
-    
-    fig, axes = plt.subplots(nrows, ncols, sharey=sharey, sharex=sharex, figsize=figsize)
-    
-    xlabel = pprint_label(ds[dim])
-    ylabel = pprint_label(ds[raw])
-    
-    for i, r in enumerate(ds[row]):
-        for j, c in enumerate(ds[col]):
-            ax = axes[i, j]
-            sub = ds.isel({row:i, col:j})
-            mpl_scatter_error_plot(ax, sub[dim], sub[raw], sub[central], sub[dispersion])
-#             df = sub.reset_coords(drop=True).to_dataframe()
-#             mpl_error_plot_df(df, ax)
-
-#             ax.set_xlabel(None)
-#             ax.set_ylabel(None)
-            
-            if i == 0 and j == 0:
-#                 handles, labels = ax.get_legend_handles_labels()
-#                 leg = ax.legend(handles[::-1], labels[::-1])
-                leg = ax.legend()
-                setup_legend(leg)
-#             else:
-#                 ax.get_legend().remove()
-            
-            # Top
-            if i == 0:
-                col_value = pprint_label_value(sub[col])
-                ax.set_xlabel(col_value)
-                ax.xaxis.set_label_position('top')
-            
-            # Bottom
-            if i == len(ds[row])-1:
-                ax.set_xlabel(xlabel)
-                
-            # Left
-            if j == 0:
-                ax.set_ylabel(ylabel)
-
-            # Right
-            if j == len(ds[col])-1:
-                row_value = pprint_label_value(sub[row])
-                ax.set_ylabel(row_value, rotation=270, labelpad=15)
-                ax.yaxis.set_label_position('right')
-    
-            hide_spines(ax)
-        
-    fig.tight_layout()
-    
-def mpl_scatter_error_overlay(da, dim, overlay, ax):
-    df = da.reset_coords(drop=True).to_dataset(dim='unc').to_dataframe()
-    df = df.unstack(overlay)
-    
-    df.plot(ax=ax, y='Measurand', yerr='Uncertainty', fmt='.')
-    
-    leg = ax.legend()
-    setup_legend(leg)
-    leg.set_title(overlay)
-    
-    xlabel = pprint_label(da[dim])
-    ylabel = pprint_label(da)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    
-    hide_spines(ax)
-    
-#     for k, grp in df.groupby(level=overlay):
-# #         ax.errorbar(grp.index, gra['Measurand'], yerr=grp['Uncertainty'], label=str(k), fmt='.')
-#         grp.plot(ax=ax, y='Measurand', yerr='Uncertainty', label=str(k), fmt='.')
-
-    
-def direction_fit_plot(ds, title=None):
+def fit_plot(data, x, y, y_fit, title=None):
     
     # Setup figure
-    fig, ax = plt.subplots()
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True,
+                                   gridspec_kw={'height_ratios': [2, 1]})
     
     # Extract variables
-    xdata = data['I']
-    ydata = data['data']
-    y_fitdata = data['best_fit']
+    xdata = data[x]
+    ydata = data[y]
+    y_fitdata = data[y_fit]
     
     # Plot data
+
     if 'unc' in ydata.dims:
         # Error bar
         ydata = ydata.pipe(unc_dim_to_vars)
@@ -324,6 +148,7 @@ def direction_fit_plot(ds, title=None):
         ax1.plot(xdata, ydata, 'o', ms=2, lw=0, label='data')
     
     # Plot best fit
+
     if 'unc' in y_fitdata.dims:
         y_fitdata = y_fitdata.pipe(unc_dim_to_vars)
         yunc = y_fitdata[f"{y_fit}_unc"]
@@ -339,6 +164,7 @@ def direction_fit_plot(ds, title=None):
     # Adjust residual plot
     min_val = np.abs(np.min(y_res))
     max_val = np.max(y_res)
+
     if min_val > max_val:
         max_val = min_val*1.1
         min_val = -min_val*1.1
@@ -366,3 +192,239 @@ def direction_fit_plot(ds, title=None):
 
     fig.subplots_adjust(hspace=0)
     ax2.set_zorder(-1)
+
+def direction_fit_plot(ds, title=None):
+    
+    # Setup figure
+    fig, ax = plt.subplots()
+    
+    # Extract variables
+    xdata = data['I']
+    ydata = data['data']
+    y_fitdata = data['best_fit']
+    
+    # Plot data
+
+    if 'unc' in ydata.dims:
+        # Error bar
+        ydata = ydata.pipe(unc_dim_to_vars)
+        yunc = ydata[f"{y}_unc"]
+        ydata = ydata[y]
+        ax1.errorbar(xdata, ydata, yerr=yunc, fmt='o', ms=2, label='data')
+    else:
+        ax1.plot(xdata, ydata, 'o', ms=2, lw=0, label='data')
+    
+    # Plot best fit
+
+    if 'unc' in y_fitdata.dims:
+        y_fitdata = y_fitdata.pipe(unc_dim_to_vars)
+        yunc = y_fitdata[f"{y_fit}_unc"]
+        y_fitdata = y_fitdata[y_fit]
+        mpl_error_line_plot(ax1, xdata, y_fitdata, yunc, 'fit')
+    else:
+        ax1.plot(xdata, y_fitdata, '-', lw=1, label='fit')
+    
+    # Plot residuals
+    y_res = ydata - y_fitdata
+    ax2.plot(xdata, y_res, 'o', ms=2, lw=0)
+
+    # Adjust residual plot
+    min_val = np.abs(np.min(y_res))
+    max_val = np.max(y_res)
+
+    if min_val > max_val:
+        max_val = min_val*1.1
+        min_val = -min_val*1.1
+    else:
+        max_val = max_val*1.1
+        min_val = -max_val*1.1
+    ax2.set_ylim(max_val, min_val)
+    ax2.axhline(0, ls='--', color='k', lw=0.5)
+
+    if title is not None:
+        ax1.set_title(title)
+    
+    # Labels
+    ax1.set_ylabel(pprint_label(ydata))
+    ax2.set_ylabel('Residual')
+    ax2.set_xlabel(pprint_label(xdata))
+    
+    # Legend
+    leg = ax1.legend()
+    setup_legend(leg)
+    
+    # Spines
+    hide_spines(ax1)
+    hide_spines(ax2)
+
+    fig.subplots_adjust(hspace=0)
+    ax2.set_zorder(-1)
+
+### xarray ###
+
+def xgplot(fn, ds, x, y, hue=None, ncol=1, fn_kwargs={}, **kwargs):
+
+    # Create FacetGrid
+    g = xr.plot.FacetGrid(ds, **kwargs)
+
+    # Apply plot function to each axis
+    g.map_dataset(fn, x, y, hue, 'discrete', **fn_kwargs)
+
+    # Set ylabels
+    g.set_ylabels(xr.plot.utils.label_from_attrs(ds[y]))
+
+    return g
+
+def xgerror_plot(fn, da, x, hue=None, ncol=1, fn_kwargs={}, **kwargs):
+
+    ds = da.reset_coords(drop=True)
+
+    # Split uncertainty tinto individual variables
+
+    if 'unc' in ds:
+        ds = ds.to_dataset(dim='unc')
+
+    # Create FacetGrid
+    g = xr.plot.FacetGrid(ds, **kwargs)
+
+    # Apply plot function to each axis
+    g.map_dataset(fn, x, 'Measurand', hue, 'discrete', **fn_kwargs)
+
+    # Set ylabels
+    g.set_ylabels(xr.plot.utils.label_from_attrs(da))
+
+def scatter_error_plot(ax=None, ds=None, x=None, y=None, xerr=None, yerr=None,
+                       hue=None, fmt='.', marker=None, linestyle=None, **kwargs):
+
+    if 'unc' in ds[y].dims:
+        ds = ds[y].to_dataset(dim='unc')
+        y = 'Measurand'
+        yerr = 'Uncertainty'
+
+    variables = [x, y]
+
+    if yerr and yerr in ds:
+        variables.append(yerr)
+
+    if xerr and xerr in ds:
+        variables.append(xerr)
+
+    kwargs = {}
+
+    if yerr or xerr:
+        kwargs['fmt'] = fmt
+    else:
+        kwargs['marker'] = marker
+        kwargs['linestyle'] = linestyle
+
+    ds = ds[variables]
+
+    if hue:
+
+        for j, h in enumerate(ds[hue]):
+            df = (ds.sel({hue:h}, drop=True)
+                  .to_dataframe().reset_index()
+                  .dropna().sort_values(x))
+
+            # Observations
+            df.plot(ax=ax, x=x, y=y, xerr=xerr, yerr=yerr,
+                    legend=False, **kwargs)
+    else:
+        (ds.to_dataframe().reset_index()
+         .sort_index().dropna()
+         .plot(ax=ax, x=x, y=y, xerr=xerr, yerr=yerr,
+               legend=False, **kwargs))
+
+def reg_error_plot(ax=None, ds=None, x=None, y=None, hue=None, fmt='', **kwargs):
+
+    # Setup uncertainty if available
+    yerr = f"{y}_unc"
+
+    variables = [x, y, 'pred', 'ci_lower', 'ci_upper']
+
+    if yerr in ds:
+        fmt = '.'
+        variables.append(yerr)
+    else:
+        yerr = None
+        fmt = None
+
+    ds = ds[variables]
+
+    if hue:
+
+        for i, h in enumerate(ds[hue]):
+            sub = ds.sel({hue:h}, drop=True)
+
+            color = next(ax._get_lines.prop_cycler)['color']
+
+            df = (sub.to_dataframe().reset_index()
+                  .sort_values(x).dropna())
+
+            # Observations
+            df.plot(ax=ax, x=x, y=y, yerr=yerr,
+                    fmt=fmt, color=color, label=f'obs, {i}', legend=False)
+
+            # Prediction
+            df.plot(ax=ax, x=x, y='pred',
+                    color=color, label=f'pred, {i}', legend=False)
+
+            # Confidence interval
+            ax.fill_between(df[x], df['ci_lower'], df['ci_upper'],
+                            color=color, alpha=0.4, label=f'ci, {i}')
+    else:
+
+        df = (ds.to_dataframe().reset_index()
+              .sort_values(x).dropna())
+
+        # Observations
+        df.plot(ax=ax, x=x, y=y, yerr=yerr,
+                fmt=fmt, label='obs', legend=False)
+
+        # Prediction
+        df.plot(ax=ax, x=x, y='pred', label='pred', legend=False)
+
+        # Confidence interval
+        ax.fill_between(df[x], df['ci_lower'], df['ci_upper'],
+                        alpha=0.4, label='ci')
+
+def add_xfacetgrid_tablelegend(self, col_labels, **kwargs):
+
+    # Create custom table legend
+    figlegend = tablelegend(
+        self.axes.flat[-1], ncol=3,
+        col_labels=col_labels,
+        row_labels=list(self._hue_var.values),
+        title_label=self._hue_label,
+        bbox_transform=self.fig.transFigure,
+        loc="center right",
+        # loc='lower center',
+        **kwargs,
+    )
+    self.figlegend = figlegend
+
+    # Add new legend
+    self.fig.legends.append(figlegend)
+    figlegend._remove_method = self.fig.legends.remove
+    self.fig.stale = True
+
+    # Draw the plot to set the bounding boxes correctly
+    self.fig.draw(self.fig.canvas.get_renderer())
+
+    # Calculate and set the new width of the figure so the legend fits
+    legend_width = figlegend.get_window_extent().width / self.fig.dpi
+    figure_width = self.fig.get_figwidth()
+    self.fig.set_figwidth(figure_width + legend_width)
+
+    # Draw the plot again to get the new transformations
+    self.fig.draw(self.fig.canvas.get_renderer())
+
+    # Now calculate how much space we need on the right side
+    legend_width = figlegend.get_window_extent().width / self.fig.dpi
+    space_needed = legend_width / (figure_width + legend_width) + 0.02
+    # margin = .01
+    # _space_needed = margin + space_needed
+    right = 1 - space_needed
+
+    # Place the subplot axes to give space for the legend
+    self.fig.subplots_adjust(right=right)

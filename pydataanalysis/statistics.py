@@ -42,6 +42,7 @@ def mean_confidence(ds, k=1):
     upper = ds['mean'] + k * ds['std']
     
     ds = ds.assign({f"{k} lower": lower, f"{k} upper": upper})
+
     return ds
 
 def mean_confidence(ds, k=1):
@@ -50,6 +51,7 @@ def mean_confidence(ds, k=1):
     upper = ds['mean'] + k * ds['std']
     
     ds = ds.assign({f"{k} lower": lower, f"{k} upper": upper})
+
     return ds
 
 def robust_zscore(data, dim):
@@ -70,18 +72,10 @@ def robust_zscore(data, dim):
     
     # Calculate central and dispersion
     median = data.median(dim=dim, skipna=True)
-    
-    # Testing
-    def fn(*args, **kwargs):
-#         print(*args)
-        out = scipy.stats.median_absolute_deviation(*args, **kwargs)
-#         print(out)
-        return out
-        
+
     mad = xr.apply_ufunc(
-        fn, data,
-#         scipy.stats.median_absolute_deviation, data,
-        kwargs={'nan_policy' :'omit'},
+        scipy.stats.median_abs_deviation, data,
+        kwargs={'nan_policy' :'omit', 'scale': 'normal'},
         input_core_dims=[[dim]],
         output_core_dims=[[]],
         vectorize=True
@@ -139,6 +133,7 @@ def IQR_outlier(ds, dim):
              (ds > (Q3 + 1.5 * IQR))).any()
     
     ds = ds.where(cond)
+
     return ds, stats
     
 def xstatistics(data, dim): 
@@ -148,6 +143,7 @@ def xstatistics(data, dim):
     rzscore_data = robust_zscore(data, dim)
     
     stats = xr.merge([data, zscore_data, rzscore_data])
+
     return stats
 
 def xstats(data, dim):
@@ -191,6 +187,7 @@ def filter_uncertainty(ds, variable, level):
                                   / ds[variable])*100
     cond = ds[variable + '_relative'] > level
     ds[variable + '_unc'] = ds[variable + '_unc'].where(cond)
+
     return ds
 
 def extract_measurand(da):
@@ -216,6 +213,7 @@ def unc_dim_to_type(da):
     
     # If variable have a dimension 'unc' convert it to uarray
     # else return unchanged
+
     if 'unc' in da.dims:
         return xr.apply_ufunc(unp.uarray,
                               da.sel(unc='Measurand'),
@@ -235,9 +233,11 @@ def unc_dim_to_vars(ds):
     # Split dataset so we can work on variables with uncertainty separately
     unc_names = []
     non_unc_names = []
+
     for da_name, da in ds.data_vars.items():
         # If variable have a dimension 'unc' add to a list 
         # otherwise add to other list
+
         if 'unc' in da.dims:
             unc_names.append(da_name)
         else:
@@ -288,6 +288,7 @@ def unc_type_to_dim(da):
     nominal = nominal.assign_coords(unc='Measurand')
     unc = unc.assign_coords(unc='Uncertainty')
     da = xr.concat([nominal, unc], 'unc')
+
     return da
     
 def split_uncertainty(ds):
@@ -312,6 +313,7 @@ def combine_uncertainty(ds):
     """
     
     # Check if input is a DataArray 
+
     if not hasattr(ds, 'data_vars'):
         ds = unc_dim_to_type(ds)
     else:
@@ -325,6 +327,7 @@ def confidence_intervals(ds, k=1):
     upper = ds.sel(unc='Measurand') + k * ds.sel(unc='Uncertainty')
     upper = upper.assign_coords(unc=f"{k} upper")
     ds = xr.concat([ds, lower, upper], 'unc')
+
     return ds
 
 def relative_uncertainties(ds):
@@ -333,6 +336,7 @@ def relative_uncertainties(ds):
 
     # add relative uncertainty to dataset
     ds = xr.concat([ds, relative.assign_coords(unc='Relative uncertainty')], 'unc')
+
     return ds
 
 def xtable_uncertainty(ds, index_name=''):
@@ -360,14 +364,17 @@ def xtable_uncertainty(ds, index_name=''):
     table = table.T
 
     table.index.name = index_name
+
     return table
 
 def pdtable_uncertainty(df):
     ds = scalar_to_xarray(df)
     ds = split_uncertainty(ds)
+
     return xtable_uncertainty(ds)
 
 def mul_prog(X, nominal, unc):
     """Error propagation for multiplication or division"""
     rel = unc / nominal
+
     return X * sqrt_ss(rel)
