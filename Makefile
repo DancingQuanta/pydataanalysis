@@ -1,5 +1,5 @@
 # Report name
-REPORT = Python_Data_Analysis
+REPORT = Scanning_Thermal_Microscopy
 
 # The bibliography file
 BIB = references.bib
@@ -71,7 +71,8 @@ MKDIR = mkdir -p
 EXECUTE_NOTEBOOK = $(NBCONVERT) --to notebook --execute --output-dir=$(FULL_NBS) --ExecutePreprocessor.timeout=1000
 
 # Use standard Jupyter tools
-CONVERT_TO_MARKDOWN = $(NBCONVERT) --to mddocx --output-dir=$(MARKDOWN_TARGET) #--log-level='DEBUG'
+CONVERT_TO_MARKDOWN = $(NBCONVERT) --to markdown --output-dir=$(MARKDOWN_TARGET) --template mdadvanced
+# CONVERT_TO_MARKDOWN = $(NBCONVERT) --to mddocx --output-dir=$(MARKDOWN_TARGET) #--log-level='DEBUG'
 
 # For Word .docx files, we start from the markdown version
 CONVERT_TO_WORD = $(PANDOC) -F pandoc-crossref -F pandoc-img-glob -F src/pandoc_svg.py
