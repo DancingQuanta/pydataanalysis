@@ -13,8 +13,10 @@ dependencies:
   - scipy
   - pandas
   - xarray
-  - netcdf4
+  - h5netcdf
   - matplotlib
+  - statsmodels
+  - scikit-learn
   - bokeh
   - selenium
   - python-chromedriver-binary
@@ -23,7 +25,7 @@ dependencies:
   - panel
   - pip
   - pytest
-  - pandoc=2.9.1.1
+  - pandoc
   - pandoc-crossref
   - panflute
   - tabulate
