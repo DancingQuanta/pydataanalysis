@@ -68,26 +68,55 @@ def xsmregress(ds, x, y, dim):
     data_vars = {var_names[i]: results[i] for i in range(len(var_names))}
     results = (xr.Dataset(data_vars)
                .assign_coords(unc=unc_names))
+
     return results
 
-def calc_r_squared(x, y, p, f):
-    yhat = f(p, x)
+def calc_r_squared(y, yhat, p):
+    """
+    Calculate rsquared and adjusted rsquared score
+
+    Args:
+        y (array): Vector representing dependent variable
+        yhat (array): Vector of predicted values
+        p (int): Number of explanatory variables
+
+    Return:
+        float: rsquared
+        float: adjusted rsquared
+    """
     e = y - yhat
     ybar = np.mean(y)
-    
+
     sst = np.sum((y-ybar)**2)
     sse = np.sum((yhat-ybar)**2)
     ssr = np.sum((y-yhat)**2)
-    
+
     r_squared = 1 - (ssr / sst)
     r_squared = sse / sst
-    return r_squared
 
-def calc_se(x, y, p, f):
-    # Standard error of estimate
+    # Number of observations
+    n = y.shape
+
+    # Adjusted rsquared
+    adj_rsquared = 1 - (1-rsquared**2)*(float(n-1)/float(n-p-1))
+
+    return r_squared, adj_rsquared
+
+def calc_se(y, yhat):
+    """
+    Calculate Standard error of estimate
+
+    Args:
+        y (array): Vector representing dependent variable
+        yhat (array): Vector of predicted values
+
+    Returns:
+        float: Standard error of estimate
+    """
     yhat = f(p, x)
     e = y - yhat
     se = np.sqrt(np.sum(e)/np.count(e))
+
     return se
 
 def orthoregress(x, y, sx, sy):
@@ -111,10 +140,12 @@ def orthoregress(x, y, sx, sy):
         # y is in the same format as the x passed to Data or RealData.
         #
         # Return an array in the same format as y passed to Data or RealData.
+
         return p[0] * x + p[1]
     
     # Initial estimation to be passed as guess to odr
     linreg = linregress(x, y)
+
     if np.isnan(linreg[0]):
         print('Nan')
         print(x)
@@ -135,6 +166,7 @@ def orthoregress(x, y, sx, sy):
 #     r_squared = 1 - (ss_res / ss_tot)
 
     r_squared = calc_r_squared(x, y, out.beta, f)
+
     return gradient, intercept, r_squared
 
 def xodr(ds, x, y, dim):
@@ -144,6 +176,7 @@ def xodr(ds, x, y, dim):
     args = [ds[x], ds[y]]
     input_core_dims = [[dim]] * 2
     # loop over
+
     for v in unc:
         if v in ds:
             # Uncertainty found - add to arguments
@@ -171,6 +204,7 @@ def xodr(ds, x, y, dim):
     unc_names = ['Measurand', 'Uncertainty']
     data_vars = {var_names[i]: results[i] for i in range(len(var_names))}
     results = xr.Dataset(data_vars, coords={'unc': unc_names})
+
     return results
 
 def odr_fit(f, x, y, sx, sy, beta0=None):
@@ -204,6 +238,7 @@ def xodr_fit(f, ds, x, y, dim, **kwargs):
     # Append x and y uncertainties if exists
     unc = [f"{x}_unc", f"{y}_unc"]
     # loop over
+
     for v in unc:
         if v in ds:
             # Uncertainty found - add to arguments
@@ -223,6 +258,7 @@ def xodr_fit(f, ds, x, y, dim, **kwargs):
     )
     data_vars = {'coef': results[0], 'sd': results[1], 'se': results[2]}
     results = xr.Dataset(data_vars)
+
     return results
 
 def process_fit(ds, x, y, dim, fit_method='sm'):
@@ -233,6 +269,7 @@ def process_fit(ds, x, y, dim, fit_method='sm'):
         'odr': xodr
     }
     func = fit_case.get(fit_method, None)
+
     if func is None:
         raise(f'{fit_method} is not in {list(fit_case.keys())}')
     
@@ -256,6 +293,7 @@ def gaussian(x,mu,sigm,amp):
     p[1]: sigma - stddev
     p[2]: amplitude
     '''
+
     return amp*np.exp(-(x-mu)**2/(2*sigm**2))
 
 def prep_fit_results(results):
@@ -273,6 +311,7 @@ def prep_fit_results(results):
 
     # Merge and deliver
     results = xr.merge([param_fits, line_fits])
+
     return results
 
 def gaussian_fit(ds, x, y):
@@ -295,6 +334,7 @@ def lorentzian_fit(ds, x, y):
     mod = LorentzianModel(nan_policy='omit')
     pars = mod.guess(y, x=x)
     results = mod.fit(y, pars, x=x)
+
     return prep_fit_results(results)
 
 def rect_fit(ds, x, y):
@@ -306,6 +346,7 @@ def rect_fit(ds, x, y):
     mod = RectangleModel(nan_policy='omit')
     pars = mod.guess(y, x=x)
     results = mod.fit(y, pars, x=x)
+
     return prep_fit_results(results)
 
 # def process_fit_peak_models(ds, x, y, dim):
@@ -325,12 +366,14 @@ def fit_model(ds, x, y, dim, model):
     results['data'].attrs = ds['y'].attrs
     results['best_fit'].attrs = ds['y'].attrs
     results = results.rename({'data': 'y'})
+
     return results
 
 def Linear(p,x) :
     # A linear function with:
     #   Constant Background          : p[0]
     #   Slope                        : p[1]
+
     return p[0]+p[1]*x
 
 def Quadratic(p,x) :
@@ -338,6 +381,7 @@ def Quadratic(p,x) :
     #   Constant Background          : p[0]
     #   Slope                        : p[1]
     #   Curvature                    : p[2]
+
     return p[0]+p[1]*x+p[2]*x**2
 
 def Cubic(p,x) :
@@ -346,4 +390,5 @@ def Cubic(p,x) :
     #   Slope                        : p[1]
     #   Curvature                    : p[2]
     #   3rd Order coefficient        : p[3]
+
     return p[0]+p[1]*x+p[2]*x**2+p[3]*x**3
