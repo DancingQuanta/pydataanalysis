@@ -3,6 +3,7 @@ import xarray as xr
 import statsmodels.api as sm
 from scipy.stats import sem, linregress
 from scipy import odr
+from scipy import optimize
 from lmfit.models import GaussianModel, RectangleModel, LorentzianModel
 import pybroom as br
 
@@ -392,3 +393,633 @@ def Cubic(p,x) :
     #   3rd Order coefficient        : p[3]
 
     return p[0]+p[1]*x+p[2]*x**2+p[3]*x**3
+
+def sm_wls(x, y, y_err):
+
+    nobs = len(x)
+    x, y, y_err = dropna(x, y, y_err)
+
+    if len(x) > 0:
+
+        weights = 1. / (y_err ** 2)
+
+        # Fit data
+        mod = sm.WLS(y, sm.add_constant(x), weights)
+
+        # Results
+        res = mod.fit(cov_type='fixed scale')
+        coeff = res.params
+        error = res.bse
+        pvals = res.pvalues
+        rsquared = res.rsquared
+        rsquared_adj = res.rsquared_adj
+        prediction = res.get_prediction().summary_frame()
+        pred = prediction['mean']
+        ci_lower = prediction['mean_ci_lower']
+        ci_upper = prediction['mean_ci_upper']
+        resid = res.resid
+        # print(res.summary().tables[1])
+    else:
+        coeff = error = pvals = [np.nan] * 2
+        rsquared = rsquared_adj = np.nan
+        pred = ci_lower = ci_upper = resid = [np.nan] * nobs
+
+    return (coeff, error, pvals,
+            rsquared, rsquared_adj,
+            pred, ci_lower, ci_upper, resid)
+
+def xsm_wls(ds, x, y, y_err, dim):
+    dim_ = f"{dim}_"
+    ds_ = ds.swap_dims({dim: dim_})
+
+    param = [['param']] * 3
+    other = [[]] * 2
+    obs_dim = [[dim]] * 4
+    output_core_dims = param + other + obs_dim
+
+    results = xr.apply_ufunc(
+        sm_wls, ds_[x], ds_[y], ds_[y_err],
+        input_core_dims=[[dim_], [dim_], [dim_]],
+        output_core_dims=output_core_dims,
+        vectorize=True
+    )
+
+    var_names = ['coeff', 'stderr', 'pvals',
+                 'rsquared', 'rsquared_adj',
+                 'pred', 'ci_lower', 'ci_upper', 'resid']
+    data_vars = {var_names[i]: results[i] for i in range(len(var_names))}
+
+    # Merge data
+    ds2 = ds.assign(data_vars)
+
+    # Information about dimension is lost so copy informaiton
+    ds2[dim] = ds[dim]
+
+    return ds2
+
+def sm_ols(x, y):
+
+    nobs = len(x)
+    x, y = dropna(x, y)
+
+    if len(x) > 0:
+
+        # Fit data
+        mod = sm.OLS(y, sm.add_constant(x))
+
+        # Results
+        res = mod.fit()
+        coeff = res.params
+        error = res.bse
+        pvals = res.pvalues
+        rsquared = res.rsquared
+        rsquared_adj = res.rsquared_adj
+        prediction = res.get_prediction().summary_frame()
+        pred = prediction['mean']
+        ci_lower = prediction['mean_ci_lower']
+        ci_upper = prediction['mean_ci_upper']
+        resid = res.resid
+        # print(res.summary().tables[1])
+    else:
+        coeff = error = pvals = [np.nan] * 2
+        rsquared = rsquared_adj = np.nan
+        pred = ci_lower = ci_upper = resid = [np.nan] * nobs
+
+    return (coeff, error, pvals,
+            rsquared, rsquared_adj,
+            pred, ci_lower, ci_upper, resid)
+
+def xsm_ols(ds, x, y, dim):
+    dim_ = f"{dim}_"
+    ds_ = ds.swap_dims({dim: dim_})
+
+    param = [['param']] * 3
+    other = [[]] * 2
+    obs_dim = [[dim]] * 4
+    output_core_dims = param + other + obs_dim
+
+    results = xr.apply_ufunc(
+        sm_ols, ds_[x], ds_[y],
+        input_core_dims=[[dim_], [dim_]],
+        output_core_dims=output_core_dims,
+        vectorize=True
+    )
+
+    var_names = ['coeff', 'stderr', 'pvals',
+                 'rsquared', 'rsquared_adj',
+                 'pred', 'ci_lower', 'ci_upper', 'resid']
+    data_vars = {var_names[i]: results[i] for i in range(len(var_names))}
+
+    # Merge data
+    ds2 = ds.assign(data_vars)
+
+    # Information about dimension is lost so copy informaiton
+    ds2[dim] = ds[dim]
+
+    return ds2
+
+def sm_poly2_ols(x, y):
+
+    nobs = len(x)
+    x, y = dropna(x, y)
+
+    if len(x) > 0:
+
+        # Fit data
+        # mod = sm.OLS(y, sm.add_constant(x))
+
+        olsdata = {"x": x, "y": y}
+        formula = "y ~ x + I(x**2)"
+        mod = smf.ols(formula, data=olsdata)
+
+        # Results
+        res = mod.fit()
+        coeff = res.params
+        error = res.bse
+        pvals = res.pvalues
+        rsquared = res.rsquared
+        rsquared_adj = res.rsquared_adj
+        prediction = res.get_prediction().summary_frame()
+        pred = prediction['mean']
+        ci_lower = prediction['mean_ci_lower']
+        ci_upper = prediction['mean_ci_upper']
+        resid = res.resid
+        # print(res.summary().tables[1])
+    else:
+        coeff = error = pvals = [np.nan] * 2
+        rsquared = rsquared_adj = np.nan
+        pred = ci_lower = ci_upper = resid = [np.nan] * nobs
+
+    return (coeff, error, pvals,
+            rsquared, rsquared_adj,
+            pred, ci_lower, ci_upper, resid)
+
+def xsm_poly2_ols(ds, x, y, dim=None):
+    dim_ = f"{dim}_"
+    ds_ = ds.swap_dims({dim: dim_})
+
+    param = [['param']] * 3
+    other = [[]] * 2
+    obs_dim = [[dim]] * 4
+    output_core_dims = param + other + obs_dim
+
+    results = xr.apply_ufunc(
+        sm_poly2_ols, ds_[x], ds_[y],
+        input_core_dims=[[dim_], [dim_]],
+        output_core_dims=output_core_dims,
+        vectorize=True
+    )
+
+    var_names = ['coeff', 'stderr', 'pvals',
+                 'rsquared', 'rsquared_adj',
+                 'pred', 'ci_lower', 'ci_upper', 'resid']
+    data_vars = {var_names[i]: results[i] for i in range(len(var_names))}
+    ds = ds.assign(data_vars)
+
+    # Params
+    ds['param'] = ['p_0', 'p_1', 'p_2']
+
+    return ds
+
+def sm_quadratic_ols(x, y):
+
+    nobs = len(x)
+    x, y = dropna(x, y)
+
+    if len(x) > 0:
+
+        # Fit data
+        # mod = sm.OLS(y, sm.add_constant(x))
+
+        olsdata = {"x": x, "y": y}
+        formula = "y ~ I(x**2)"
+        mod = smf.ols(formula, data=olsdata)
+
+        # Results
+        res = mod.fit()
+        coeff = res.params
+        error = res.bse
+        pvals = res.pvalues
+        rsquared = res.rsquared
+        rsquared_adj = res.rsquared_adj
+        prediction = res.get_prediction().summary_frame()
+        pred = prediction['mean']
+        ci_lower = prediction['mean_ci_lower']
+        ci_upper = prediction['mean_ci_upper']
+        resid = res.resid
+        # print(res.summary().tables[1])
+    else:
+        coeff = error = pvals = [np.nan] * 2
+        rsquared = rsquared_adj = np.nan
+        pred = ci_lower = ci_upper = resid = [np.nan] * nobs
+
+    return (coeff, error, pvals,
+            rsquared, rsquared_adj,
+            pred, ci_lower, ci_upper, resid)
+
+def xsm_quadratic_ols(ds, x, y, dim=None):
+    dim_ = f"{dim}_"
+    ds_ = ds.swap_dims({dim: dim_})
+
+    param = [['param']] * 3
+    other = [[]] * 2
+    obs_dim = [[dim]] * 4
+    output_core_dims = param + other + obs_dim
+
+    results = xr.apply_ufunc(
+        sm_quadratic_ols, ds_[x], ds_[y],
+        input_core_dims=[[dim_], [dim_]],
+        output_core_dims=output_core_dims,
+        vectorize=True
+    )
+
+    var_names = ['coeff', 'stderr', 'pvals',
+                 'rsquared', 'rsquared_adj',
+                 'pred', 'ci_lower', 'ci_upper', 'resid']
+    data_vars = {var_names[i]: results[i] for i in range(len(var_names))}
+    ds = ds.assign(data_vars)
+
+    # Params
+    ds['param'] = ['p_0', 'p_2']
+
+    return ds
+
+def sm_rlm(x, y):
+
+    nobs = len(x)
+    x, y = dropna(x, y)
+
+    if len(x) > 0:
+
+        # Fit data
+        mod = sm.RLM(y, sm.add_constant(x))
+
+        # Results
+        res = mod.fit()
+        coeff = res.params
+        error = res.bse
+        pvals = res.pvalues
+        pred = res.fittedvalues
+        ci = res.conf_int()
+        ci_lower = res.model.predict(ci[:, 0])
+        ci_upper = res.model.predict(ci[:, 1])
+        resid = res.resid
+        # print(res.summary().tables[1])
+    else:
+        coeff = error = pvals = [np.nan] * 2
+        pred = ci_lower = ci_upper = resid = [np.nan] * nobs
+
+    return (coeff, error, pvals,
+            pred, ci_lower, ci_upper, resid)
+
+def xsm_rlm(ds, x, y, dim):
+    dim_ = f"{dim}_"
+    ds_ = ds.swap_dims({dim: dim_})
+
+    param = [['param']] * 3
+    obs_dim = [[dim]] * 4
+    output_core_dims = param + obs_dim
+
+    results = xr.apply_ufunc(
+        sm_rlm, ds_[x], ds_[y],
+        input_core_dims=[[dim_], [dim_]],
+        output_core_dims=output_core_dims,
+        vectorize=True
+    )
+
+    var_names = ['coeff', 'stderr', 'pvals',
+                 'pred', 'ci_lower', 'ci_upper', 'resid']
+    data_vars = {var_names[i]: results[i] for i in range(len(var_names))}
+    ds = ds.assign(data_vars)
+
+    return ds
+
+def extract_params(ds, variables, attrs):
+    """
+    Transform coefficient and their stderr into dataarray with unc dimension
+    and metadata
+
+    Args:
+        ds (xarray.Dataset): Dataset onctaining coeff and stderr dataarrays
+        variables (list of str): List of quantity names
+        attrs (dict): Dict of variable: dict of variable metadata.
+
+    Return:
+        xarray.Dataset: Dataset of quantities as dataarrays with unc dimension
+    """
+    # Reshape
+    da = unc_dim(ds['coeff'], ds['stderr'])
+    da['param'] = variables
+    ds = da.to_dataset(dim='param')
+
+    for k in ds.data_vars.keys():
+        ds[k].attrs = attrs[k]
+
+    return ds
+
+def process_curve_fit(da, func_fit, xdata):
+    """
+    Process xarray.DataArray through scipy.curve_fit with supplied fitting
+    function and selected data.
+    The DataArray is dependent variable while the coords are independent
+    variables.
+    This function allows one or ore indepedent variables to be selected
+    provided that the fiting function requires this.
+
+    Args:
+        da (xarray.DataArray): DataArray onctaining ydata and xdata
+        func_fit (callable): Function to fit
+        xdata (str or lisr of str): Name(s) of indepedent arrays
+    """
+
+    # Import indepedent and dependent variables
+    df = (da.to_dataframe()
+          .dropna()
+          .reset_index())
+    xdata = df[xdata].values.transpose()
+    ydata = df[da.name].values
+    # Fit
+
+    p, pcov = optimize.curve_fit(func_fit, xdata, ydata)
+
+    # Error
+    perror = np.sqrt(np.diag(pcov))
+
+    # Return parameter results
+    coords = {'unc': ['Measurand', 'Uncertainty']}
+    params = xr.DataArray(data=[p, perror], coords=coords, dims=['unc', 'param'])
+
+    return params
+
+def prediction_analysis(ds, meas, unc):
+    """
+    Calculate the residuals and confidence intervals from results of a model
+    evaluation
+
+    Args:
+        ds (xarray.Dataset): Data
+        meas (xarray.DataArray): Measurand
+        unc (xarray.Dataset): Uncertainty
+    """
+
+    # Confidence intervals
+    k = 2
+    ci_lower = meas - unc * k
+    ci_upper = meas + unc * k
+
+    # Residuals
+    resid = ds['data'] - meas
+
+    return ds.assign(pred=meas,
+                     pred_unc=unc,
+                     ci_lower=ci_lower,
+                     ci_upper=ci_upper,
+                     resid=resid)
+
+def process_sm_ols(ds, func_features, y=None):
+    """
+    Process xarray.DataArray through statsmodel.OLS with supplied feature
+    transformation function.
+    The DataArray is dependent variable while the coords are features and
+    is transformed into full feature set with the supplied feature
+    transformed function.
+    The dependent variable and features will be fitted with ordinary least
+    squares with statsmodel.OLS.
+
+    Args:
+        ds (xarray.DataArray or xarray.Dataset): DataArray onctaining ydata and xdata
+        func_features (callable): Feature transformation function
+    
+    Returns:
+        xarray.Dataset: Results of OLS fit added to the input DataArray.
+    """
+
+    # Stack observations
+    ds2 = ds.stack(obs=[...]).dropna(dim='obs')
+
+    # Import indepedent and dependent variables
+    df = ds2.to_dataframe().reset_index()
+
+    # Dependent variable
+
+    if y:
+        y = df[y]
+    else:
+        y = df[ds.name]
+        ds = ds.to_dataset()
+
+    # Independent variable(s)
+    x = func_features(df)
+
+    # Fit data
+    mod = sm.OLS(y, x)
+
+    # Results
+    res = mod.fit()
+    coeff = res.params
+    error = res.bse
+    pvals = res.pvalues
+    rsquared = res.rsquared
+    rsquared_adj = res.rsquared_adj
+    prediction = res.get_prediction().summary_frame()
+    pred = prediction['mean']
+    ci_lower = prediction['mean_ci_lower']
+    ci_upper = prediction['mean_ci_upper']
+    resid = res.resid
+
+    params = xr.Dataset({'coeff': ('param', coeff),
+                         'stderr': ('param', error),
+                         'pvals': ('param', pvals)},
+                        coords={'param': list(x.columns)})
+
+    rsquare = xr.Dataset({'rsquared': rsquared,
+                          'rsquared_adj': rsquared_adj})
+
+    # Convert to dataset
+
+    if hasattr(ds2, 'to_dataset'):
+        ds2 = ds2.to_dataset()
+
+    pred = ds2.assign({'pred': ('obs', pred),
+                       'ci_lower': ('obs', ci_lower),
+                       'ci_upper': ('obs', ci_upper),
+                       'resid': ('obs', resid)})
+
+    ds2 = xr.merge([params, rsquare, pred])
+
+    ds2 = ds2.unstack('obs')
+
+    for k, v in ds.coords.items():
+        ds2[k].attrs = v.attrs
+
+    return ds2
+
+def process_sm_wls(ds, func_features, y, yerr):
+    """
+    Process xarray.DataArray through statsmodel.OLS with supplied feature
+    transformation function.
+    The DataArray is dependent variable while the coords are features and
+    is transformed into full feature set with the supplied feature
+    transformed function.
+    The dependent variable and features will be fitted with ordinary least
+    squares with statsmodel.OLS.
+
+    Args:
+        ds (xarray.DataArray or xarray.Dataset): DataArray onctaining ydata and xdata
+        func_features (callable): Feature transformation function
+    
+    Returns:
+        xarray.Dataset: Results of OLS fit added to the input DataArray.
+    """
+
+    # Stack observations
+    ds2 = ds.stack(obs=[...]).dropna(dim='obs')
+
+    # Import indepedent and dependent variables
+    df = ds2.to_dataframe().reset_index()
+
+    # Dependent variable
+    y = df[y]
+    weights = 1. / (df[yerr] ** 2)
+
+    # Independent variable(s)
+    x = func_features(df)
+
+    # Fit data
+    mod = sm.WLS(y, x, weights)
+
+    # Results
+    res = mod.fit()
+    coeff = res.params
+    error = res.bse
+    pvals = res.pvalues
+    rsquared = res.rsquared
+    rsquared_adj = res.rsquared_adj
+    prediction = res.get_prediction().summary_frame()
+    pred = prediction['mean']
+    ci_lower = prediction['mean_ci_lower']
+    ci_upper = prediction['mean_ci_upper']
+    resid = res.resid
+
+    params = xr.Dataset({'coeff': ('param', coeff),
+                         'stderr': ('param', error),
+                         'pvals': ('param', pvals)},
+                        coords={'param': list(x.columns)})
+
+    rsquare = xr.Dataset({'rsquared': rsquared,
+                          'rsquared_adj': rsquared_adj})
+
+    # Convert to dataset
+
+    if hasattr(ds2, 'to_dataset'):
+        ds2 = ds2.to_dataset()
+
+    pred = ds2.assign({'pred': ('obs', pred),
+                       'ci_lower': ('obs', ci_lower),
+                       'ci_upper': ('obs', ci_upper),
+                       'resid': ('obs', resid)})
+
+    ds2 = xr.merge([params, rsquare, pred])
+
+    ds2 = ds2.unstack('obs')
+
+    for k, v in ds.coords.items():
+        ds2[k].attrs = v.attrs
+
+    return ds2
+
+def process_sm_rlm(ds, func_features, y=None):
+    """
+    Process xarray.DataArray through statsmodel.RLM with supplied feature
+    transformation function.
+    The DataArray is dependent variable while the coords are features and
+    is transformed into full feature set with the supplied feature
+    transformed function.
+    The dependent variable and features will be fitted with ordinary least
+    squares with statsmodel.OLS.
+
+    Args:
+        ds (xarray.DataArray or xarray.Dataset): DataArray onctaining ydata and xdata
+        func_features (callable): Feature transformation function
+
+    Returns:
+        xarray.Dataset: Results of OLS fit added to the input DataArray.
+    """
+
+    # Stack observations
+    ds2 = ds.stack(obs=[...]).dropna(dim='obs')
+
+    # Import indepedent and dependent variables
+    df = ds2.to_dataframe().reset_index()
+
+    # Dependent variable
+
+    if y:
+        y = df[y]
+    else:
+        y = df[ds.name]
+        ds = ds.to_dataset()
+
+    # Independent variable(s)
+    x = func_features(df)
+
+    # Fit data
+    mod = sm.RLM(y, x)
+
+    # Results
+    res = mod.fit()
+    coeff = res.params
+    error = res.bse
+    pvals = res.pvalues
+    pred = res.fittedvalues
+    resid = res.resid
+
+    # Get more measures
+    wls_res = sm.WLS(mod.endog, mod.exog, weights=mod.weights).fit()
+    prstd, ci_lower, ci_upper = wls_prediction_std(wls_res)
+    rsquared = wls_res.rsquared
+    rsquared_adj = wls_res.rsquared_adj
+
+    # Package into xarray
+    params = xr.Dataset({'coeff': ('param', coeff),
+                         'stderr': ('param', error),
+                         'pvals': ('param', pvals)},
+                        coords={'param': list(x.columns)})
+
+    rsquare = xr.Dataset({'rsquared': rsquared,
+                          'rsquared_adj': rsquared_adj})
+
+    # Convert to dataset
+
+    if hasattr(ds2, 'to_dataset'):
+        ds2 = ds2.to_dataset()
+
+    pred = ds2.assign({'pred': ('obs', pred),
+                       'ci_lower': ('obs', ci_lower),
+                       'ci_upper': ('obs', ci_upper),
+                       'resid': ('obs', resid)})
+
+    ds2 = xr.merge([params, rsquare, pred])
+
+    ds2 = ds2.unstack('obs')
+
+    for k, v in ds.coords.items():
+        ds2[k].attrs = v.attrs
+
+    return ds2
+
+def transform_params(ds):
+    """
+    Transform coefficient and their stderr into dataarray with unc dimension
+
+    Args:
+        ds (xarray.Dataset): Dataset onctaining coeff and stderr dataarrays
+
+    Return:
+        xarray.Dataset: Dataset of quantities as dataarrays with unc dimension
+    """
+    # Reshape
+    da = unc_dim(ds['coeff'], ds['stderr'])
+    ds = da.to_dataset(dim='param')
+
+    return ds
