@@ -11,12 +11,15 @@ def reset_coords_except(ds, keep, **kwargs):
     """
     coords = [coord for coord in ds.coords
               if coord not in keep + list(ds.dims)]
+
     return ds.reset_coords(coords, **kwargs)
 
 def get_attrs(ds):
     attrs = {}
+
     for var in ds.variables:
         attrs[var] = ds[var].attrs
+
     return attrs
 
 def restore_attrs(ds, attrs):
@@ -27,24 +30,29 @@ def restore_attrs(ds, attrs):
 def combine(d, dim, new_coords='coords'):
     coords = d.keys()
     das = d.values()
+
     for k, v in d.items():
         d[k] = v.assign_coords({new_coords: k})
     
     concat = xr.concat(d.values(), dim)
+
     return concat
 
 def split(ds, dim, old_coords):
     # Get unique values of old coords
     uniques = np.unique(ds[old_coords])
     sub_dict = {}
+
     for unique in uniques:
         sub = ds.where(ds[old_coords] == unique, drop=True)
         sub = sub.drop(old_coords)
         sub_dict[unique] = sub
+
     return sub_dict
 
 def apply_ufunc_to_dataset(func, *args, names, **kwargs):
     results = xarray.apply_ufunc(func, *args, **kwargs)
+
     return xarray.Dataset(dict(zip(names, results))) 
 
 def xscientific_notation(da):
@@ -74,10 +82,12 @@ def pprint_label(da):
     label = da.name
     
     # long name
+
     if 'long_name' in da.attrs:
         label = da.attrs['long_name']
     
     # Units
+
     if 'units' in da.attrs:
         label = label + ' ({units})'.format(**da.attrs)
     
@@ -86,12 +96,14 @@ def pprint_label(da):
 def pprint_value(da):
     # Convert value to string
     value = da.item()
+
     if isinstance(value, int):
         value = str(value)
     elif isinstance(value, float):
         value = F"{value:.2f}"
     
     # Add unit if available
+
     if 'units' in da.attrs:
         value = value + ' ' + da.attrs['units']
     
@@ -122,10 +134,12 @@ def replace_var(ds, old, new):
     ds = ds.copy(deep=True)
     ds[new] = ds[old]
     ds = ds.drop_vars(old)
+
     return ds
 
 def normalize(arr, axis):
     min = np.min(arr, axis)
+
     return (arr - min)/(np.max(arr, axis) - min)
 
 def flip(arr):
@@ -133,11 +147,13 @@ def flip(arr):
 
 def reject_zero(ds, dim):
     ds = ds.where(ds[dim]!=0, drop=True)
+
     return ds
     
 def multiply(da, f):
     func = lambda a, b: a * b
     da = xr.apply_ufunc(func, da, f, keep_attrs=True)
+
     return da
     
 def sign_flip_dim(ds, var, dim, flip=False):
@@ -145,6 +161,7 @@ def sign_flip_dim(ds, var, dim, flip=False):
     s = np.sign(ds[dim])
     
     # Reverse sign
+
     if flip:
         s = s * -1
 
@@ -162,6 +179,7 @@ def sign_flip_dim(ds, var, dim, flip=False):
 def sign_flip_coord(da, s, reverse=False):
     
     # Reverse sign
+
     if reverse:
         s = s * -1
     
@@ -170,8 +188,10 @@ def sign_flip_coord(da, s, reverse=False):
     
     # Annotate negative sign
     lst = []
+
     for i, v in enumerate(s):
         k = da[s.name][i].item()
+
         if v.item() == -1:
             k = rf"{k} $\times {{-1}}$"
         lst.append(k)
@@ -197,6 +217,7 @@ def dropna(*args):
     
     # reindex with mask
     out = []
+
     for arg in args:
         out.append(arg[mask])
     
@@ -205,6 +226,7 @@ def dropna(*args):
 def dropna_by_var(ds, var, dim):
     var = ds[var].dropna(dim=dim)
     ds = ds.sel({dim: var[dim]})
+
     return ds
 
 def scalar_to_xarray(data):
@@ -215,13 +237,16 @@ def scalar_to_xarray(data):
         value = da['value']
         value.attrs = {'long_name': da['long_name'].item(),
                        'units': da['units'].item()}
+
         return value
     data = data.map(fn)
+
     return data
 
 def select_uniques(ds, dim):
     # Find index of unique
     _, index = np.unique(ds[dim], return_index=True)
+
     return ds.isel({dim: index})
 
 def mask_nonuniques(ds, dim):
@@ -230,6 +255,7 @@ def mask_nonuniques(ds, dim):
     mask_array = xr.zeros_like(ds[dim], dtype=bool) 
 #     mask_array = np.zeros(len(ds[dim]), dtype=bool) 
     mask_array[index] = True
+
     return ds.where(mask_array)
 
 def stack_str(ds, dims):
@@ -238,6 +264,7 @@ def stack_str(ds, dims):
     
     # Add units
     ds2 = ds.copy(deep=True)
+
     for dim in dims:
         ds2[dim] = [pprint_value(v) for v in ds2[dim]]
         
@@ -258,6 +285,7 @@ def stack_str(ds, dims):
 
 def arange(start, stop, axis=0):
     arr = np.arange(start, stop)
+
     return arr
 
 def xarange(start, stop, dim):
@@ -267,11 +295,13 @@ def xarange(start, stop, dim):
         output_core_dims=[['seq', dim]],
         # vectorize=True
     )
+
     return da
 
 def separate_regions(a, m):
     m0 = np.concatenate(( [False], m, [False] ))
     idx = np.flatnonzero(m0[1:] != m0[:-1])
+
     return [a[idx[i]:idx[i+1]] for i in range(0,len(idx),2)]
 
 def mask_start_stop(a, trigger_val=True):
@@ -285,6 +315,7 @@ def mask_start_stop(a, trigger_val=True):
     idx = np.flatnonzero(mask[1:] != mask[:-1])
 
     # Get the start and end indices with slicing along the shifting ones
+
     return zip(idx[::2], idx[1::2]-1)
 
 def mask_block_edge(mask, max_len):
@@ -298,12 +329,14 @@ def mask_block_edge(mask, max_len):
     # Is first block start of array?
     edge = inner_edge_idx[0]
     start, stop = edge
+
     if start != 0:
         stop = start - 1
         start = 0
         edge_idx.append((start, stop))
         block_idx = 1
     edge_idx.append(edge)
+
     for edge in inner_edge_idx[1:]:
         # What are previous block edge indices?
         prev = edge_idx[block_idx]
@@ -326,6 +359,7 @@ def mask_block_edge(mask, max_len):
     # Last block
     edge = inner_edge_idx[0]
     start, stop = edge
+
     if stop != max_len:
         start = stop + 1
         stop = max_len - 1
@@ -343,6 +377,7 @@ def monotonic_array(arr):
     # positive to negative
     mask = arr[:-1] > arr[1:]
     segment_idx = mask_block_edge(mask, len(arr))
+
     return segment_idx
 
 def filter_var_by_dim(ds, dim):
@@ -350,9 +385,11 @@ def filter_var_by_dim(ds, dim):
     # Split dataset so we can work on variables with dim separately
     dim_da_list = []
     non_dim_da_list = []
+
     for da_name, da in ds.data_vars.items():
         # If variable have a dimension 'dim' add to a list 
         # otherwise add to other list
+
         if dim in da.dims:
             dim_da_list.append(da_name)
         else:
@@ -363,6 +400,7 @@ def filter_var_by_dim(ds, dim):
 
     if non_dim_da_list:
         non_dim_ds = ds[non_dim_da_list]
+
         return dim_ds, non_dim_ds
     else:
         return dim_ds, None
@@ -397,6 +435,7 @@ def split_coords(ds, coords, dim, region_points, new_dim):
 
     # Loop over each new_dim to construct new dimension
     new_dim_list = []
+
     for k, v in region_points.items():
         # Select part of the cycle
         slice_new_dim = dim_ds.sel({dim: slice(*v)})
@@ -414,8 +453,10 @@ def split_coords(ds, coords, dim, region_points, new_dim):
     data = xr.concat(new_dim_list, new_dim)
 
     # Merge dataset
+
     if non_dim_ds is not None:
         data = xr.merge([data, non_dim_ds])
+
     return data
 
 def stack(ds, dims):
@@ -472,6 +513,7 @@ def process_stacked_groupby(ds, dim, func, *args):
                .assign_coords(groupby_var)
                .expand_dims(groupby_dim)
              )
+
         return ds3
     
     # Get list of dimensions
@@ -503,6 +545,7 @@ def process_stacked_groupby(ds, dim, func, *args):
            .assign_coords(ds[coords].reset_coords()))
     
     # Restore attrs
+
     for dim in groupby_dims:
         ds2[dim].attrs = ds[dim].attrs
     
@@ -636,6 +679,7 @@ def process_stacked_groupby(ds, dim, func, *args):
                .assign_coords(groupby_var)
                .expand_dims(groupby_dim)
              )
+
         return ds3
     
     # Get list of dimensions
@@ -667,6 +711,7 @@ def process_stacked_groupby(ds, dim, func, *args):
            .assign_coords(ds[coords].reset_coords()))
     
     # Restore attrs
+
     for dim in groupby_dims:
         ds2[dim].attrs = ds[dim].attrs
     

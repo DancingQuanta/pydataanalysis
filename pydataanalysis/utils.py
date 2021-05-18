@@ -4,6 +4,7 @@ import numpy as np
 def mkdir(*args):
     dir = os.path.join(*args)
     os.makedirs(dir, exist_ok=True)
+
     return dir
 
 def is_odd(num):
@@ -14,6 +15,7 @@ def odict_sort_by_list(d, sort_list):
 
 def parse_label(s):
     lst = (s.split(' ('))
+
     if len(lst) == 1:
         return lst[0], ""
     elif len(lst) == 2:
@@ -67,6 +69,7 @@ def percent_change(data, old, new):
     # Accept a dictionary
     percent = ((data[new] - data[old])
                /data[old]) * 100
+
     return percent
 
 def percent_diff(data, one, two):
@@ -98,4 +101,5 @@ def percent_error(data, exact, approx):
 
 def sqrt_ss(arr):
     """Square root of sum of squares"""
+
     return np.sqrt(np.sum(np.square(arr)))
