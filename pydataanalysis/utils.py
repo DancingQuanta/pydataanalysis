@@ -24,36 +24,13 @@ def csnap(df, fn=lambda x: x, msg=None):
     """ Custom Help function to print things in method chaining.
         Returns back the df to further use in chaining.
     """
+
     if msg:
         print(msg)
     display(fn(df))
+
     return df
 
-def magnitude_thousand(number):
-    # Checking if its negative or positive
-    if number < 0:
-        negative = True
-    else:
-        negative = False
-
-    # if its negative converting to positive (math.log()....)
-    if negative:
-        number = number * -1
-
-    # Taking the exponent
-    exponent = int(np.log10(number))
-
-    # Checking if it was negative converting it back to negative
-    if negative:
-        number = number * -1
-
-    # If the exponent is smaler than 0 dividing the exponent with -1
-    if exponent < 0:
-        exponent = exponent-1
-    
-    # Returns magnitude in steps of 3
-    exponent = (exponent // 3) * 3
-    return exponent
 
 def vrange(starts, stops):
     """Create concatenated ranges of integers for multiple start/stop

@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 from .pandas_utils import pd
-from .utils import magnitude_thousand
+from .numpy_utils import scientific_notation
 
 xr.set_options(keep_attrs=True)
 
@@ -47,20 +47,25 @@ def apply_ufunc_to_dataset(func, *args, names, **kwargs):
     results = xarray.apply_ufunc(func, *args, **kwargs)
     return xarray.Dataset(dict(zip(names, results))) 
 
-def xmagnitude_thousand(da):
-    # Get max
-    number = da.max()
+def xscientific_notation(da):
+    """
+    Scales the data to thousands and append the original exponent to the units
 
-    # Calculate thousand muliplter
-    exponent = magnitude_thousand(number)
+    Args:
+        da (xr.DataArray): Input data to be scaled
 
-    # Adjust scale
-    if exponent != 0:
-        units = da.attrs.get('units', '')
+    Returns:
+        xr.DataArray: Scaled data
+    """
+    # Get units
+    units = da.attrs.get('units', '')
 
-        da = da / 10**exponent
+    # Scales to thousand
+    template = r'$\times 10^{{{exponent}}}$'
+    da, units = scientific_notation(da, units, template)
 
-        da.attrs['units'] = rf'{units} $\times 10^{{{exponent}}}$'
+    # UPdate units
+    da.attrs['units'] = units
 
     return da
 
