@@ -22,11 +22,12 @@ k = m*omega*omega
 b = m*omega/Q
 F = 40
 T = 6.0
+impact_time = T*0.1
 params = {  "A"   : b/m,
             "B"   : omega*omega,
             "C"   : F/m,
             "D"   : omega,
-            "end" : T/2,
+            "end" : impact_time,
             "func": forced_oscillation }
 ```
 
@@ -51,21 +52,33 @@ for i in range(int(N-1)):
 
 
 ```python
+# Divide up data by impact event
+impact_period = t < impact_time
+t_i, t_d = t[impact_period], t[~impact_period]
+y_i, y_d = y[impact_period], y[~impact_period]
+v_i, v_d = v[impact_period], v[~impact_period]
+```
+
+```python
 # Plotting
-plt.plot(t, y)
+plt.plot(t_i, y_i, label='Impact')
+plt.plot(t_d, y_d, label='Decay')
 plt.xlabel("Time (arbitrary unit)")
 plt.ylabel("Oscillation (arbitrary unit)")
 plt.xlim([-0.2, T])
 plt.ylim([-np.max(y)*1.2, np.max(y)*1.2])
 plt.title(str(params["func"].__name__))
-plt.show()
+plt.legend()
 ```
 
 ```python
 # Plotting
 plt.plot(y, v)
+plt.plot(y_d, v_d, label='Decay', color='b')
+plt.plot(y_i, v_i, label='Impact', color='y')
 plt.xlabel("Oscillation (arbitrary unit)")
 plt.ylabel("Velocity")
+plt.legend()
 ```
 
 ```python
