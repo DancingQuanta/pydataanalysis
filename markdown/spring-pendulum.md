@@ -116,6 +116,15 @@ $$
 where $a (t) = \ddot{y} (t)$ is acceleration and
 $v = \dot{y} (t)$ is velocity.
 
+Converting into two coupled first-order differential
+equations
+$$
+\frac{d x}{d t} = v (x (t), t)
+$$
+$$
+\frac{d v}{d t} = - \frac{b}{m} v (t) - \frac{k}{m} y (t)
+$$
+
 We are at the point $(x_n, v_n, t_n)$ and the time
 duration step is $\Delta t$. The Runge–Kutta method
 involves calculating $k=4$ estimates for $(x_n, v_n, a_n)$.
