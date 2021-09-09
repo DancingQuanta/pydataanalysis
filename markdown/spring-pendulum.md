@@ -1,6 +1,22 @@
-Numerical simulation of motion of mass on spring pendulum.
+# Numerical simulation of motion of mass on spring pendulum.
 
-The mass is hung vertically from a fixed point with a spring.
+Objective: Use fourth-order Runge–Kutta method to calculate damped
+harmonic motion of a spring pendulum. Solve different order
+differential equations using the fourth-order Runge–Kutta method.
+
+Exercise 4 (a) from 4.4 Exercises of Physics of Oscillations and Waves
+
+Notes:
+
+* Pg 18 describe physics of spring pendulum.
+* Pg 65 describe Runge–Kutta Method
+* Written spring pendulum physics and Runge–Kutta Method into the jupyter
+  notebook.
+
+## Spring pendulum
+
+A spring pendulum is a mass hanging vertically from a fixed point
+with a spring.
 When the spring do not have a mass attached at its botoom's edge
 the length of the spring is $L_0$. When the mass is attached, the
 spring will stretch to a new length $L_1$ as the force of  gravity
@@ -42,7 +58,7 @@ $$
 $$
 is the angular frequency.
 The differential equation is second order homogeneous differential
-equation with constant coef-ficients. 
+equation with constant coef-ficients.
 The general solution for it is
 $$
 y (y) = B \sin(\omega t) + C \cos(\omega t)
@@ -79,7 +95,7 @@ $$
 Define some relations
 $$
 \frac{b}{m} \equiv 2 \gamma \\
-\frac{k}{m} \equiv \omega^2 \\ 
+\frac{k}{m} \equiv \omega^2 \\
 $$
 and inserting them into the polynominal equation
 $$
@@ -89,6 +105,85 @@ This is a quadratic equation whose roots can be written as:
 $$
 \alpha_{\pm} = - \gamma \pm \sqrt{\gamma^2 - \omega^2}
 $$
+
+
+## Runge–Kutta method
+
+The equation of motion of mass-spring pendulum is
+$$
+a (t) = - \frac{b}{m} v (t) - \frac{k}{m} y (t)
+$$
+where $a (t) = \ddot{y} (t)$ is acceleration and
+$v = \dot{y} (t)$ is velocity.
+
+We are at the point $(x_n, v_n, t_n)$ and the time
+duration step is $\Delta t$. The Runge–Kutta method
+involves calculating $k=4$ estimates for $(x_n, v_n, a_n)$.
+The $k$th estimate of an quantity will be represented by
+$x_{k, n}$.
+
+1. The first estimate of $a_n$ can be found by
+    $$
+    a_{1,n} = f(x_n, v_n, t_n)
+    $$
+    At the beginning of the time step the velocity is
+    $$
+    v_{1, n} = v_n
+    $$
+2. Use Euler's method to find $x_n$ and $v_n$ in the
+    middle of the step
+    $$
+    \begin{aligned}
+    x_{2,n} &= x_{1,n} + v_{1,n} \frac{\Delta t}{2} \\
+    v_{2,n} &= v_{1,n} + a_{1,n} \frac{\Delta t}{2} \\
+    \end{aligned}
+    $$
+    Then find an estimate of $a_{2,n}$
+    $$
+    a_{2,n} = f(x_{2,n}, v_{2,n}, t_n + \Delta t / 2)
+    $$
+3. Use Euler's method and $a_{2,n}$ to find another estimate
+    at the midpoint
+    $$
+    \begin{aligned}
+    x_{3,n} &= x_{1,n} + v_{2,n} \frac{\Delta t}{2} \\
+    v_{3,n} &= v_{1,n} + a_{2,n} \frac{\Delta t}{2} \\
+    \end{aligned}
+    $$
+    Then find an estimate of $a_{3,n}$
+    $$
+    a_{3,n} = f(x_{3,n}, v_{3,n}, t_n + \Delta t / 2)
+    $$
+4. Use Euler's method to find $x_n$ and $v_n$ in the
+    end of the step
+    $$
+    \begin{aligned}
+    x_{4,n} &= x_{1,n} + v_{3,n} \Delta t \\
+    v_{4,n} &= v_{1,n} + a_{3,n} \Delta t \\
+    \end{aligned}
+    $$
+    Then find an estimate of $a_{4,n}$
+    $$
+    a_{4,n} = f(x_{4,n}, v_{4,n}, t_n + \Delta t)
+    $$
+5. Calculate weigthed average of $a_n$ and $v_n$
+    $$
+    \bar{a_n} = \frac{1}{6} (a_{1,n} + 2 a_{2,n} + 2 a_{3,n} + a_{4,n})
+    $$
+    $$
+    \bar{v_n} = \frac{1}{6} (v_{1,n} + 2 v_{2,n} + 2 v_{3,n} + v_{4,n})
+    $$
+6. Use Eular's method to find $x (t)$ and $\dot{x} (t)$
+    $$
+    x_{n+1} = x_n + \bar{v_n} \Delta t
+    $$
+    $$
+    v_{n+1} = v_n + \bar{a_n} \Delta t
+    $$
+    $$
+    t_{n+1} = t_n + \Delta t
+    $$
+    which can be used as the initial values for the next step.
 
 ```python
 import numpy as np
