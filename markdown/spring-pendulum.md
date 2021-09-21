@@ -1,8 +1,8 @@
 # Numerical simulation of motion of mass on spring pendulum.
 
-Objective: Use fourth-order Runge–Kutta method to calculate damped
-harmonic motion of a spring pendulum. Solve different order
-differential equations using the fourth-order Runge–Kutta method.
+Objective: Use fourth-order Runge–Kutta method to calculate damped harmonic
+motion of a spring pendulum. Solve different order differential equations using
+the fourth-order Runge–Kutta method.
 
 Exercise 4 (a) from 4.4 Exercises of Physics of Oscillations and Waves
 
@@ -12,27 +12,24 @@ Notes:
 * Pg 65 describe Runge–Kutta Method
 * Written spring pendulum physics and Runge–Kutta Method into the jupyter
   notebook.
+* Analyse various damping situations
 
 ## Spring pendulum
 
-A spring pendulum is a mass hanging vertically from a fixed point
-with a spring.
-When the spring do not have a mass attached at its botoom's edge
-the length of the spring is $L_0$. When the mass is attached, the
-spring will stretch to a new length $L_1$ as the force of  gravity
-$F_g$ pulls the mass downwards.
+A spring pendulum is a mass hanging vertically from a fixed point with a spring.
+When the spring do not have a mass attached at its bottom's edge the length of
+the spring is $L_0$. When the mass is attached, the spring will stretch to a new
+length $L_1$ as the force of  gravity $F_g$ pulls the mass downwards.
 $$
 F_s = F_g
 $$
 where $F_s$ is the restoring force from the spring.
-Using Hookes' law to describe the spring restoring force against the
-gravity
+Using Hookes' law to describe the spring restoring force against the gravity
 $$
 k (L_1 - L_0) = mg
 $$
-When the mass is pulled downwards slightly and released, it will
-oscillate about the equilibrium point with an instantenous
-displacement $L (t)$ at time $t$.
+When the mass is pulled downwards slightly and released, it will oscillate about
+the equilibrium point with an instantaneous displacement $L (t)$ at time $t$.
 $$
 F (t) = k [L (t) - L_0] - mg
 $$
@@ -57,21 +54,21 @@ $$
 \omega = \sqrt{\frac{k}{m}}
 $$
 is the angular frequency.
-The differential equation is second order homogeneous differential
-equation with constant coef-ficients.
+The differential equation is second order homogeneous differential equation with
+constant coefficients.
 The general solution for it is
 $$
 y (y) = B \sin(\omega t) + C \cos(\omega t)
 $$
 
-now the air friction needs to be accounted for. A basic model of
-force from air friction is
+Now the air friction needs to be accounted for. A basic model of force from air
+friction is
 $$
 F_F = - b v - D v^2
 $$
-This model is challenging to derive an general analytical solution.
-At slow speed the term $D v^2$ can be very small compared with $b v$
-and so the former term can be neglected.
+This model is challenging to derive an general analytical solution.  At slow
+speed the term $D v^2$ can be very small compared with $b v$ and so the former
+term can be neglected.
 $$
 F_F = - b v
 $$
@@ -82,13 +79,13 @@ $$
 \frac{k}{m} y (t) + \frac{b}{m} \dot{y} (t) + \ddot{y} (t) = 0 \\
 $$
 
-This is a homogeneous second-order differential equation. Choosing a
-trial solution of the type:
+This is a homogeneous second-order differential equation. Choosing a trial
+solution of the type:
 $$
 y (t) = A e^{\alpha t}
 $$
-Insertion of this trial solution into the differential equation gives
-a polynominal
+Insertion of this trial solution into the differential equation gives a
+polynomial
 $$
 \alpha^2 + \frac{b}{m} \alpha + \frac{k}{m} = 0
 $$
@@ -116,52 +113,70 @@ $$
 where $a (t) = \ddot{y} (t)$ is acceleration and
 $v = \dot{y} (t)$ is velocity.
 
-Converting into two coupled first-order differential
-equations
+This needs to be converted into two coupled first-order differential equations.
+First a change of variables
 $$
-\frac{d x}{d t} = v (x (t), t)
+\begin{aligned}
+x (t) &= y (t) \\
+v (t) &= \frac{d y}{d t} \\
+\end{aligned}
 $$
+and then differentiate both sides
 $$
-\frac{d v}{d t} = - \frac{b}{m} v (t) - \frac{k}{m} y (t)
+\begin{aligned}
+\frac{d x}{d t} &= \frac{d y}{d t} = v (y (t), t) \\
+\frac{d v}{d t} &= \frac{d^2 y}{d t^2} = a (t) \\
+\end{aligned}
 $$
+thus the coupled first order differential equations are
+$$
+\begin{aligned}
+\frac{d x}{d t} &= v (y (t), t) \\
+\frac{d v}{d t} &= - \frac{b}{m} v (t) - \frac{k}{m} y (t) \\
+\end{aligned}
+$$
+Simplify $a (t)$
+$$
+\frac{d v}{d t} = - A v (t) - B y (t)
+$$
+where $A = \frac{b}{m}$ and $B = \frac{k}{m}$
 
-We are at the point $(x_n, v_n, t_n)$ and the time
-duration step is $\Delta t$. The Runge–Kutta method
-involves calculating $k=4$ estimates for $(x_n, v_n, a_n)$.
-The $k$th estimate of an quantity will be represented by
-$x_{k, n}$.
+
+We are at the point $(y_n, v_n, t_n)$ and the time duration step is $\Delta t$.
+The Runge–Kutta method involves calculating $k=4$ estimates for $(y_n, v_n,
+a_n)$.  The $k$th estimate of an quantity will be represented by $y_{k, n}$.
 
 1. The first estimate of $a_n$ can be found by
     $$
-    a_{1,n} = f(x_n, v_n, t_n)
+    a_{1,n} = - \frac{b}{m} v_n (t) - \frac{k}{m} y_n (t)
     $$
     At the beginning of the time step the velocity is
     $$
     v_{1, n} = v_n
     $$
-2. Use Euler's method to find $x_n$ and $v_n$ in the
+2. Use Euler's method to find $y_n$ and $v_n$ in the
     middle of the step
     $$
     \begin{aligned}
-    x_{2,n} &= x_{1,n} + v_{1,n} \frac{\Delta t}{2} \\
-    v_{2,n} &= v_{1,n} + a_{1,n} \frac{\Delta t}{2} \\
+    x_{2,n} &= y_{1,n} + v_{1,n} \frac{\Delta t}{2} \\
+    v_{2,n} &= y_{1,n} + a_{1,n} \frac{\Delta t}{2} \\
     \end{aligned}
     $$
     Then find an estimate of $a_{2,n}$
     $$
-    a_{2,n} = f(x_{2,n}, v_{2,n}, t_n + \Delta t / 2)
+    a_{2,n} = f(y_{2,n}, v_{2,n}, t_n + \Delta t / 2)
     $$
 3. Use Euler's method and $a_{2,n}$ to find another estimate
     at the midpoint
     $$
     \begin{aligned}
-    x_{3,n} &= x_{1,n} + v_{2,n} \frac{\Delta t}{2} \\
+    x_{3,n} &= y_{1,n} + v_{2,n} \frac{\Delta t}{2} \\
     v_{3,n} &= v_{1,n} + a_{2,n} \frac{\Delta t}{2} \\
     \end{aligned}
     $$
     Then find an estimate of $a_{3,n}$
     $$
-    a_{3,n} = f(x_{3,n}, v_{3,n}, t_n + \Delta t / 2)
+    a_{3,n} = f(y_{3,n}, v_{3,n}, t_n + \Delta t / 2)
     $$
 4. Use Euler's method to find $x_n$ and $v_n$ in the
     end of the step
