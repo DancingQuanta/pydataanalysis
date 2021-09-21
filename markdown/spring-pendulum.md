@@ -221,31 +221,27 @@ from pydataanalysis.rungekutta4 import *
 
 ```python
 # Constants and parameters
-omega = 100
-Q = 25
-m = 1.0e-2
-k = m*omega*omega
-b = m*omega/Q
-F = 40
-T = 6.0
-impact_time = T*0.1
+
+m = 1e-1
+k = 10
+b = 0.1
+
 params = {  "A"   : b/m,
-            "B"   : omega*omega,
-            "C"   : F/m,
-            "D"   : omega,
-            "end" : impact_time,
-            "func": forced_oscillation }
+            "B"   : k/m,
+            "func": damped_oscillation }
 ```
 
 ```python
 # Number of steps and step size
-N = 2e4
+T = 6
+N = 1e4
 delta_t = T/N
+delta_t
 ```
 
 ```python
 # Allocating arrays
-y = np.zeros(int(N))
+y = np.zeros(int(N)) + 0.1
 v = np.zeros(int(N))
 t = np.zeros(int(N))
 ```
@@ -258,33 +254,45 @@ for i in range(int(N-1)):
 
 
 ```python
-# Divide up data by impact event
-impact_period = t < impact_time
-t_i, t_d = t[impact_period], t[~impact_period]
-y_i, y_d = y[impact_period], y[~impact_period]
-v_i, v_d = v[impact_period], v[~impact_period]
-```
-
-```python
 # Plotting
-plt.plot(t_i, y_i, label='Impact')
-plt.plot(t_d, y_d, label='Decay')
+plt.plot(t, y)
 plt.xlabel("Time (arbitrary unit)")
 plt.ylabel("Oscillation (arbitrary unit)")
 plt.xlim([-0.2, T])
 plt.ylim([-np.max(y)*1.2, np.max(y)*1.2])
 plt.title(str(params["func"].__name__))
-plt.legend()
 ```
 
 ```python
 # Plotting
 plt.plot(y, v)
-plt.plot(y_d, v_d, label='Decay', color='b')
-plt.plot(y_i, v_i, label='Impact', color='y')
 plt.xlabel("Oscillation (arbitrary unit)")
 plt.ylabel("Velocity")
-plt.legend()
+```
+
+```python
+# Analytical solution using the trial solution
+# page 18 for overdamping
+
+def trial_solutin(t, gamma, omega):
+    determinant =
+    alpha_p = - gamma + determinant
+    alpha_n = - gamma - determinant
+
+def determinant(gamma, omega):
+    return gamma**2 - omega**2
+
+def overdamped_solution(t, gamma, omega, A_1, A_2):
+    return (A_1 * np.exp((-gamma + np.sqrt(determinant(gamma, omega)))*t) +
+            A_2 * np.exp((-gamma - np.sqrt(determinant(gamma, omega)))*t))
+
+def critical_solution(t, gamma, A, B):
+    return (A * np.exp(-gamma * t) +
+            B * t * np.exp(-gamma * t))
+
+def underdamped_solution(t, gamma, omega, phi):
+    return (A * np.exp(-gamma * t) *
+            np.cos(np.sqrt(determinant(gamma, omega)*t) + phi))
 ```
 
 ```python
