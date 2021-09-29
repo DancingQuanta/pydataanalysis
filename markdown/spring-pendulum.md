@@ -104,6 +104,49 @@ $$
 $$
 
 
+This solution gives three different physical situations:
+
+* $\gamma > \omega$ Overdamping
+* $\gamma < \omega$ Underdamping
+* $\gamma = \omega$ Critical damping
+
+## Overdamping
+
+$$
+\alpha = \sqrt{\gamma^2 - \omega^2}
+$$
+$$
+z(t) = A_1 \exp{(-\gamma + \alpha) t} +
+A_2 \exp{(-\gamma - \alpha) t}
+$$
+Initial conditions:
+$$
+z(0) = x_0 = A_1 + A_2
+$$
+$$
+v(t=0) = v_0 = (-\gamma + \alpha) A_1 + (-\gamma - \alpha) A_2 = a A_1 + b A_2
+$$
+$$
+A_2 = \frac{v_0 - a x_0}{b-a}
+$$
+$$
+A_1 = x_0 - A_2
+$$
+
+## Underdamping
+
+$$
+\omega' = \sqrt{\omega^2 - \gamma^2}
+$$
+$$
+z(t) = A \exp{(-\gamma t)} \cos{(\omega' t + \phi)}
+$$
+
+$$
+A = \left( x_0^2 - \left(\frac{v_0+\gamma c_0}{\omega'} \right)^2 \right)^{1/2}
+$$
+
+
 ## Runge–Kutta method
 
 The equation of motion of mass-spring pendulum is
@@ -209,6 +252,15 @@ a_n)$.  The $k$th estimate of an quantity will be represented by $y_{k, n}$.
     $$
     which can be used as the initial values for the next step.
 
+
+Initial conditions:
+
+* m = 100g = 0.1 kg
+* k = 10N/m
+* b = 0.10kg/s
+* z(0) = 10 cm = 0.1 m
+* v (t=0) = 0 m/s
+
 ```python
 import numpy as np
 from matplotlib import pyplot as plt
@@ -222,10 +274,29 @@ from pydataanalysis.rungekutta4 import *
 ```python
 # Constants and parameters
 
-m = 1e-1
+m = 0.1
 k = 10
 b = 0.1
 
+# Initial conditions
+y_0 = 0.1
+v_0 = 0
+
+gamma = b / (m * 2)
+omega = np.sqrt(k/m)
+
+def oscillation_case(gamma, omega):
+    if gamma > omega:
+        return 'overdamped'
+    elif gamma < omega:
+        return 'underdamped'
+    elif gamma == omega:
+        return 'critical'
+
+{'case': oscillation_case(gamma, omega), 'gamma': gamma, 'omega': omega}
+```
+
+```python
 params = {  "A"   : b/m,
             "B"   : k/m,
             "func": damped_oscillation }
@@ -241,9 +312,11 @@ delta_t
 
 ```python
 # Allocating arrays
-y = np.zeros(int(N)) + 0.1
+y = np.zeros(int(N))
 v = np.zeros(int(N))
 t = np.zeros(int(N))
+y[0] = y_0
+v[0] = v_0
 ```
 
 ```python
@@ -272,29 +345,41 @@ plt.ylabel("Velocity")
 
 ```python
 # Analytical solution using the trial solution
-# page 18 for overdamping
+# page 18
 
-def trial_solutin(t, gamma, omega):
-    determinant =
-    alpha_p = - gamma + determinant
-    alpha_n = - gamma - determinant
+def overdamped_initial(gamma, omega, x_0, v_0):
+    determinant = np.sqrt(gamma**2 - omega**2)
 
-def determinant(gamma, omega):
-    return gamma**2 - omega**2
+    a = - gamma + determinant
+    b = - gamma + determinant
+    A_2 = (v_0 - a x_0) / (b - a) 
+    A_1 = x_0 - A_2
+    
+    return A_1, A_2
 
 def overdamped_solution(t, gamma, omega, A_1, A_2):
-    return (A_1 * np.exp((-gamma + np.sqrt(determinant(gamma, omega)))*t) +
-            A_2 * np.exp((-gamma - np.sqrt(determinant(gamma, omega)))*t))
+    determinant = np.sqrt(gamma**2 - omega**2)
+    return (A_1 * np.exp((-gamma + determinant)*t) +
+            A_2 * np.exp((-gamma - determinant)*t))
 
-def critical_solution(t, gamma, A, B):
+def criticaldamped_solution(t, gamma, A, B):
     return (A * np.exp(-gamma * t) +
             B * t * np.exp(-gamma * t))
 
 def underdamped_solution(t, gamma, omega, phi):
+    reduced_omega = np.sqrt(omega**2 - gamma**2)
     return (A * np.exp(-gamma * t) *
-            np.cos(np.sqrt(determinant(gamma, omega)*t) + phi))
+            np.cos(reduced_omega*t + phi))
 ```
 
 ```python
+# Plotting
+y = overdamped_solution(t, gamma, omega, A_1, A_2)
 
+plt.plot(t, y)
+plt.xlabel("Time (arbitrary unit)")
+plt.ylabel("Oscillation (arbitrary unit)")
+plt.xlim([-0.2, T])
+plt.ylim([-np.max(y)*1.2, np.max(y)*1.2])
+plt.title(str(params["func"].__name__))
 ```
