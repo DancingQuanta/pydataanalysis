@@ -143,7 +143,7 @@ z(t) = A \exp{(-\gamma t)} \cos{(\omega' t + \phi)}
 $$
 
 $$
-A = \left( x_0^2 - \left(\frac{v_0+\gamma c_0}{\omega'} \right)^2 \right)^{1/2}
+A = \left( x_0^2 + \left(\frac{v_0+\gamma c_0}{\omega'} \right)^2 \right)^{1/2}
 $$
 
 
