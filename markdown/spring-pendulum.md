@@ -112,9 +112,11 @@ This solution gives three different physical situations:
 
 ## Overdamping
 
+Define overdamping coefficient
 $$
 \alpha = \sqrt{\gamma^2 - \omega^2}
 $$
+Displacement over time
 $$
 z(t) = A_1 \exp{(-\gamma + \alpha) t} +
 A_2 \exp{(-\gamma - \alpha) t}
@@ -146,6 +148,84 @@ $$
 A = \left( x_0^2 + \left(\frac{v_0+\gamma c_0}{\omega'} \right)^2 \right)^{1/2}
 $$
 
+
+Initial conditions:
+
+* m = 100g = 0.1 kg
+* k = 10N/m
+* b = 0.10kg/s
+* z(0) = 10 cm = 0.1 m
+* v (t=0) = 0 m/s
+
+```python
+# Constants and parameters
+
+m = 0.1
+k = 10
+b = 0.1
+
+# Initial conditions
+y_0 = 0.1
+v_0 = 0
+
+import numpy as np
+
+gamma = b / (m * 2)
+omega = np.sqrt(k/m)
+```
+
+```python
+def oscillation_case(gamma, omega):
+    if gamma > omega:
+        return 'overdamped'
+    elif gamma < omega:
+        return 'underdamped'
+    elif gamma == omega:
+        return 'critical'
+
+{'case': oscillation_case(gamma, omega), 'gamma': gamma, 'omega': omega}
+```
+
+```python
+# Analytical solution using the trial solution
+# page 18
+
+def overdamped_initial(gamma, omega, x_0, v_0):
+    determinant = np.sqrt(gamma**2 - omega**2)
+
+    a = - gamma + determinant
+    b = - gamma - determinant
+    A_2 = (v_0 - a x_0) / (b - a)
+    A_1 = x_0 - A_2
+
+    return A_1, A_2
+
+def overdamped_solution(t, gamma, omega, A_1, A_2):
+    determinant = np.sqrt(gamma**2 - omega**2)
+    return (A_1 * np.exp((-gamma + determinant)*t) +
+            A_2 * np.exp((-gamma - determinant)*t))
+
+def criticaldamped_solution(t, gamma, A, B):
+    return (A * np.exp(-gamma * t) +
+            B * t * np.exp(-gamma * t))
+
+def underdamped_solution(t, gamma, omega, phi):
+    reduced_omega = np.sqrt(omega**2 - gamma**2)
+    return (A * np.exp(-gamma * t) *
+            np.cos(reduced_omega*t + phi))
+```
+
+```python
+# Plotting
+y = overdamped_solution(t, gamma, omega, A_1, A_2)
+
+plt.plot(t, y)
+plt.xlabel("Time (arbitrary unit)")
+plt.ylabel("Oscillation (arbitrary unit)")
+plt.xlim([-0.2, T])
+plt.ylim([-np.max(y)*1.2, np.max(y)*1.2])
+plt.title(str(params["func"].__name__))
+```
 
 ## Runge–Kutta method
 
@@ -252,48 +332,9 @@ a_n)$.  The $k$th estimate of an quantity will be represented by $y_{k, n}$.
     $$
     which can be used as the initial values for the next step.
 
-
-Initial conditions:
-
-* m = 100g = 0.1 kg
-* k = 10N/m
-* b = 0.10kg/s
-* z(0) = 10 cm = 0.1 m
-* v (t=0) = 0 m/s
-
-```python
-import numpy as np
-from matplotlib import pyplot as plt
-```
-
 ```python
 # Importing solver
 from pydataanalysis.rungekutta4 import *
-```
-
-```python
-# Constants and parameters
-
-m = 0.1
-k = 10
-b = 0.1
-
-# Initial conditions
-y_0 = 0.1
-v_0 = 0
-
-gamma = b / (m * 2)
-omega = np.sqrt(k/m)
-
-def oscillation_case(gamma, omega):
-    if gamma > omega:
-        return 'overdamped'
-    elif gamma < omega:
-        return 'underdamped'
-    elif gamma == omega:
-        return 'critical'
-
-{'case': oscillation_case(gamma, omega), 'gamma': gamma, 'omega': omega}
 ```
 
 ```python
@@ -341,45 +382,4 @@ plt.title(str(params["func"].__name__))
 plt.plot(y, v)
 plt.xlabel("Oscillation (arbitrary unit)")
 plt.ylabel("Velocity")
-```
-
-```python
-# Analytical solution using the trial solution
-# page 18
-
-def overdamped_initial(gamma, omega, x_0, v_0):
-    determinant = np.sqrt(gamma**2 - omega**2)
-
-    a = - gamma + determinant
-    b = - gamma + determinant
-    A_2 = (v_0 - a x_0) / (b - a) 
-    A_1 = x_0 - A_2
-    
-    return A_1, A_2
-
-def overdamped_solution(t, gamma, omega, A_1, A_2):
-    determinant = np.sqrt(gamma**2 - omega**2)
-    return (A_1 * np.exp((-gamma + determinant)*t) +
-            A_2 * np.exp((-gamma - determinant)*t))
-
-def criticaldamped_solution(t, gamma, A, B):
-    return (A * np.exp(-gamma * t) +
-            B * t * np.exp(-gamma * t))
-
-def underdamped_solution(t, gamma, omega, phi):
-    reduced_omega = np.sqrt(omega**2 - gamma**2)
-    return (A * np.exp(-gamma * t) *
-            np.cos(reduced_omega*t + phi))
-```
-
-```python
-# Plotting
-y = overdamped_solution(t, gamma, omega, A_1, A_2)
-
-plt.plot(t, y)
-plt.xlabel("Time (arbitrary unit)")
-plt.ylabel("Oscillation (arbitrary unit)")
-plt.xlim([-0.2, T])
-plt.ylim([-np.max(y)*1.2, np.max(y)*1.2])
-plt.title(str(params["func"].__name__))
 ```
