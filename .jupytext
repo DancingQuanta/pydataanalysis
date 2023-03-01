@@ -1,2 +1,2 @@
 # Pair notebooks 
-default_jupytext_formats = "markdown//md,notebooks//ipynb,scripts//py:percent"
+formats = "markdown//md,notebooks//ipynb,scripts//py:percent"
